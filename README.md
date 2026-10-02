@@ -16,6 +16,18 @@ Private couple application for Nasywa, built with React, TypeScript, Vite, Tailw
 
 Never place a Supabase service-role key in this frontend. `.env` is gitignored.
 
+## Troubleshooting: stuck on the "Hubungkan dunia kecil kita" setup screen
+
+This screen is intentional — not an error. It appears whenever `VITE_SUPABASE_URL` or `VITE_SUPABASE_PUBLISHABLE_KEY` is missing, because the app uses a real Supabase backend (no mock/localStorage fallback). The gate lives in `src/lib/supabase.ts` (`isSupabaseConfigured`) and `src/App.tsx`.
+
+To get past it:
+
+1. Make sure `.env` exists at the project root and both Supabase values are filled (no quotes, no trailing spaces).
+2. **Restart the dev server.** Vite only reads `.env` at startup — stop `npm run dev` (Ctrl+C) and run it again. Editing `.env` while the server runs will NOT take effect.
+3. The setup screen now shows a per-variable status (`Terisi` / `Belum diisi`) so you can confirm which value the app actually sees. It never displays the secret values themselves.
+
+Once both Supabase values are present and the server is restarted, the setup screen disappears automatically and you land on the login page.
+
 ## Persistence and security
 
 All domain data is stored in Supabase PostgreSQL. Photos are compressed in-browser, uploaded to private Supabase Storage paths shaped as `{user_id}/{year}/{month}/{uuid}.webp`, and recorded in `photos`. The gallery resolves short-lived signed URLs; files are never made public. Deletion removes the Storage object first, then metadata. RLS covers SELECT, INSERT, UPDATE, and DELETE for each user-owned table; activity ownership is inherited through its parent date.
