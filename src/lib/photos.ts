@@ -40,7 +40,7 @@ export async function withSignedUrls(photos: Photo[]): Promise<Photo[]> {
   if (!photos.length) return []
   const { data, error } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(photos.map(({ storage_path }) => storage_path), 3600)
   if (error) throw error
-  return photos.map((photo, index) => ({ ...photo, signedUrl: data[index]?.signedUrl }))
+  return photos.map((photo, index) => ({ ...photo, signedUrl: data[index]?.signedUrl ?? undefined }))
 }
 
 export async function deletePhoto(photo: Photo): Promise<void> {
