@@ -9,7 +9,9 @@ Private couple application for Nasywa, built with React, TypeScript, Vite, Tailw
 3. Create a Supabase project and fill:
    - `VITE_SUPABASE_URL`: Project Settings → API → Project URL
    - `VITE_SUPABASE_PUBLISHABLE_KEY`: Project Settings → API → publishable/anon key
-4. Run `supabase/migrations/001_initial_schema.sql` in Supabase SQL Editor. It creates tables, indexes, triggers, RLS policies, the private `couple-photos` bucket, and storage ownership policies.
+4. Run the SQL migrations in Supabase SQL Editor, in order:
+   - `supabase/migrations/001_initial_schema.sql` — tables, indexes, triggers, RLS, the private `couple-photos` bucket, and storage policies.
+   - `supabase/migrations/002_videos.sql` — the `videos` table (RLS enabled) and the private `couple-videos` bucket for Video Moments. Safe to run on an existing project; it only adds new objects.
 5. In Supabase Authentication, create the one private account you and Nasywa will share for this app, then disable **Allow new users to sign up**. The app intentionally has no public registration screen.
 6. For maps, enable Maps JavaScript API and Places API in Google Cloud, restrict the key to your deployed domains, and fill `VITE_GOOGLE_MAPS_API_KEY`.
 7. Start with `npm run dev`. Production validation: `npm run lint && npm run typecheck && npm run build`.
@@ -30,7 +32,9 @@ Once both Supabase values are present and the server is restarted, the setup scr
 
 ## Persistence and security
 
-All domain data is stored in Supabase PostgreSQL. Photos are compressed in-browser, uploaded to private Supabase Storage paths shaped as `{user_id}/{year}/{month}/{uuid}.webp`, and recorded in `photos`. The gallery resolves short-lived signed URLs; files are never made public. Deletion removes the Storage object first, then metadata. RLS covers SELECT, INSERT, UPDATE, and DELETE for each user-owned table; activity ownership is inherited through its parent date.
+All domain data is stored in Supabase PostgreSQL. Photos are compressed in-browser, uploaded to private Supabase Storage paths shaped as `{user_id}/{year}/{month}/{uuid}.webp`, and recorded in `photos`. Video Moments follow the same pattern: the raw file is uploaded to the private `couple-videos` bucket at `{user_id}/{year}/{month}/{uuid}.{ext}` and recorded in `videos`. The gallery and video player resolve short-lived signed URLs; files are never made public. Deletion removes the Storage object first, then metadata. RLS covers SELECT, INSERT, UPDATE, and DELETE for each user-owned table; activity ownership is inherited through its parent date.
+
+The **Calendar** page (`/app/calendar`) is a dedicated month view driven entirely by the `dates` table — no hardcoded data. Navigate between months and click any day with a date to see its details.
 
 ## Required photo acceptance test
 

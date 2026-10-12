@@ -1,4 +1,4 @@
-import { CalendarDays, Camera, FerrisWheel, Heart, Home, Images, LogOut, MapPinned } from 'lucide-react'
+import { CalendarDays, CalendarRange, Camera, FerrisWheel, Heart, Home, Images, LogOut, MapPinned } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
@@ -9,6 +9,7 @@ import { SakuraBackground } from './SakuraBackground'
 const items = [
   { to: '/app', label: 'Home', icon: Home, end: true },
   { to: '/app/dates', label: 'Dates', icon: CalendarDays },
+  { to: '/app/calendar', label: 'Calendar', icon: CalendarRange },
   { to: '/app/places', label: 'Places', icon: MapPinned },
   { to: '/app/memories', label: 'Memories', icon: Camera },
   { to: '/app/gallery', label: 'Gallery', icon: Images },

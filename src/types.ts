@@ -85,6 +85,20 @@ export interface Photo {
   signedUrl?: string
 }
 
+export interface Video {
+  id: string
+  user_id: string
+  storage_path: string
+  title: string | null
+  caption: string | null
+  date: string | null
+  location: string | null
+  duration_seconds: number | null
+  is_favorite: boolean
+  created_at: string
+  signedUrl?: string
+}
+
 export interface WheelPlace {
   id: string
   user_id: string

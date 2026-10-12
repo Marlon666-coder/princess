@@ -19,6 +19,7 @@ export const supabase = createClient(
 )
 
 export const PHOTO_BUCKET = 'couple-photos'
+export const VIDEO_BUCKET = 'couple-videos'
 
 export function friendlyError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error)

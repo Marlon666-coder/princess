@@ -8,6 +8,7 @@ import { AppShell } from './components/AppShell'
 import { WelcomePage } from './pages/WelcomePage'
 import { HomePage } from './pages/HomePage'
 import { DatesPage } from './pages/DatesPage'
+import { CalendarPage } from './pages/CalendarPage'
 import { PlacesPage } from './pages/PlacesPage'
 import { MemoriesPage } from './pages/MemoriesPage'
 import { GalleryPage } from './pages/GalleryPage'
@@ -22,6 +23,7 @@ function Application() {
     <Route path="/app" element={user ? <AppShell /> : <Navigate to="/" replace />}>
       <Route index element={<HomePage />} />
       <Route path="dates" element={<DatesPage />} />
+      <Route path="calendar" element={<CalendarPage />} />
       <Route path="places" element={<PlacesPage />} />
       <Route path="memories" element={<MemoriesPage />} />
       <Route path="gallery" element={<GalleryPage />} />
