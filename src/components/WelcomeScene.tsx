@@ -1,12 +1,27 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { ContactShadows, Float, Sparkles, Environment, Lightformer } from '@react-three/drei'
-import { EffectComposer, Bloom, DepthOfField, Vignette } from '@react-three/postprocessing'
+import { ContactShadows, Float, Sparkles, Environment, Lightformer, SoftShadows } from '@react-three/drei'
+import {
+  EffectComposer,
+  Bloom,
+  DepthOfField,
+  Vignette,
+  N8AO,
+  ToneMapping,
+  HueSaturation,
+  BrightnessContrast,
+  SMAA,
+} from '@react-three/postprocessing'
+import { ToneMappingMode } from 'postprocessing'
 import { useMemo, useRef, useState } from 'react'
 import {
+  ACESFilmicToneMapping,
   CanvasTexture,
   CatmullRomCurve3,
   Color,
   MathUtils,
+  PCFSoftShadowMap,
+  RepeatWrapping,
+  SRGBColorSpace,
   TubeGeometry,
   Vector3,
   type Group,
@@ -36,7 +51,9 @@ function useBarkTextures(night: boolean) {
       const ctx = canvas.getContext('2d')!
       draw(ctx)
       const tex = new CanvasTexture(canvas)
-      tex.anisotropy = 8
+      tex.anisotropy = 16
+      tex.wrapS = tex.wrapT = RepeatWrapping
+      tex.repeat.set(1, 3)
       return tex
     }
 
@@ -47,6 +64,15 @@ function useBarkTextures(night: boolean) {
     const color = make((ctx) => {
       ctx.fillStyle = base
       ctx.fillRect(0, 0, size, size)
+      // subtle vertical gradient for depth
+      const grad = ctx.createLinearGradient(0, 0, size, 0)
+      grad.addColorStop(0, dark)
+      grad.addColorStop(0.5, base)
+      grad.addColorStop(1, dark)
+      ctx.globalAlpha = 0.3
+      ctx.fillStyle = grad
+      ctx.fillRect(0, 0, size, size)
+      ctx.globalAlpha = 1
       // vertical fibrous streaks
       for (let i = 0; i < 260; i++) {
         const x = Math.random() * size
@@ -85,6 +111,7 @@ function useBarkTextures(night: boolean) {
       ctx.globalAlpha = 1
     })
 
+    color.colorSpace = SRGBColorSpace
     return { color, bump }
   }, [night])
 }
@@ -134,7 +161,15 @@ function Limb({
 
   return (
     <mesh geometry={geo} castShadow receiveShadow>
-      <meshStandardMaterial map={colorMap} bumpMap={bumpMap} bumpScale={0.06} roughness={0.92} metalness={0} />
+      <meshStandardMaterial
+        map={colorMap}
+        bumpMap={bumpMap}
+        bumpScale={0.12}
+        roughnessMap={bumpMap}
+        roughness={0.95}
+        metalness={0}
+        envMapIntensity={0.6}
+      />
     </mesh>
   )
 }
@@ -267,7 +302,9 @@ function Yggdrasil({ night, quality }: { night: boolean; quality: 'high' | 'low'
                 color={c.color}
                 emissive={c.color}
                 emissiveIntensity={night ? 0.5 : 0.22}
-                roughness={0.65}
+                roughness={0.6}
+                metalness={0}
+                envMapIntensity={0.8}
                 flatShading
               />
             </mesh>
@@ -366,10 +403,12 @@ function Petals({ count, night }: { count: number; night: boolean }) {
    Camera rig — wide establishing shot of the whole tree, easing to a
    close zoom on the couple when `zoom` turns true.
 ----------------------------------------------------------------- */
-const WIDE: Vector3Tuple = [2, 7, 30]
-const CLOSE: Vector3Tuple = [-0.6, 1.6, 7]
-const LOOK_WIDE: Vector3Tuple = [0, 9, 0]
-const LOOK_CLOSE: Vector3Tuple = [-0.3, 1.3, 0]
+// Wide shot pulled far back + a touch higher so the whole towering tree reads.
+const WIDE: Vector3Tuple = [1.5, 9, 40]
+// Close shot drops to eye level with the couple at the base and moves in on them.
+const CLOSE: Vector3Tuple = [0, -0.6, 6.5]
+const LOOK_WIDE: Vector3Tuple = [0, 10, 0]
+const LOOK_CLOSE: Vector3Tuple = [0, -1.1, 2.4]
 
 function CameraRig({ zoom, enableParallax }: { zoom: boolean; enableParallax: boolean }) {
   const { camera, mouse } = useThree()
@@ -408,42 +447,58 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
 
   return (
     <Canvas
-      shadows={!mobile}
+      shadows={!mobile ? { type: PCFSoftShadowMap } : false}
       camera={{ position: WIDE, fov: 42 }}
       dpr={[1, mobile ? 1.3 : 2]}
-      gl={{ antialias: !mobile, alpha: false, powerPreference: 'high-performance' }}
+      gl={{
+        antialias: false,
+        alpha: false,
+        powerPreference: 'high-performance',
+        toneMapping: ACESFilmicToneMapping,
+        toneMappingExposure: night ? 1.05 : 1.15,
+      }}
     >
       <color attach="background" args={[sky]} />
-      <fog attach="fog" args={[sky, 24, 55]} />
+      <fog attach="fog" args={[sky, 24, 58]} />
 
-      {/* Soft HDRI-style lighting via in-scene lightformers (no network fetch) */}
-      <Environment resolution={256} frames={1}>
-        <Lightformer intensity={night ? 0.6 : 1.4} position={[0, 12, 8]} scale={14} color={night ? '#c9b3ff' : '#fff4f9'} />
-        <Lightformer intensity={night ? 0.4 : 0.8} position={[-8, 6, -6]} scale={10} color="#ffd6e6" />
-        <Lightformer intensity={0.5} position={[8, 4, 4]} scale={8} color={night ? '#8fb0ff' : '#ffe8d6'} />
+      {/* Percentage-closer soft shadows for realistic contact softening */}
+      {!mobile && <SoftShadows size={28} samples={12} focus={0.9} />}
+
+      {/* HDRI-style image-based lighting via in-scene lightformers (no network) */}
+      <Environment resolution={mobile ? 128 : 256} frames={1}>
+        <color attach="background" args={[night ? '#1a1030' : '#ffe9f2']} />
+        <Lightformer form="rect" intensity={night ? 0.8 : 2.2} position={[0, 14, 10]} scale={[18, 10, 1]} color={night ? '#d8c2ff' : '#fff6fb'} />
+        <Lightformer form="circle" intensity={night ? 0.5 : 1.1} position={[-10, 7, -6]} scale={10} color="#ffd6e6" />
+        <Lightformer form="circle" intensity={night ? 0.6 : 0.9} position={[10, 5, 4]} scale={8} color={night ? '#8fb0ff' : '#ffe8d6'} />
+        <Lightformer form="ring" intensity={night ? 1.2 : 0.6} position={[0, 20, 2]} scale={6} color={night ? '#ffc0dd' : '#fff0f6'} />
       </Environment>
 
-      <ambientLight intensity={night ? 0.5 : 0.8} />
+      <ambientLight intensity={night ? 0.35 : 0.55} />
+      {/* key sun/moon light with soft high-res shadows */}
       <directionalLight
-        position={[8, 18, 10]}
-        intensity={night ? 0.9 : 2}
-        color={night ? '#cdb6ff' : '#fff2f7'}
+        position={[9, 20, 8]}
+        intensity={night ? 1.1 : 2.6}
+        color={night ? '#cdb6ff' : '#fff4ec'}
         castShadow={!mobile}
         shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.02}
         shadow-camera-near={1}
-        shadow-camera-far={60}
-        shadow-camera-left={-20}
-        shadow-camera-right={20}
-        shadow-camera-top={30}
-        shadow-camera-bottom={-10}
+        shadow-camera-far={70}
+        shadow-camera-left={-22}
+        shadow-camera-right={22}
+        shadow-camera-top={34}
+        shadow-camera-bottom={-12}
       />
+      {/* rim/fill light for shape definition (the "AAA" wrap light) */}
+      <directionalLight position={[-10, 8, -8]} intensity={night ? 0.5 : 0.9} color={night ? '#7d6aff' : '#ffd0e2'} />
 
       <CameraRig zoom={zoom} enableParallax={!mobile} />
 
       {/* ground + soft contact shadow */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.6, 0]} receiveShadow>
         <circleGeometry args={[40, 64]} />
-        <meshStandardMaterial color={night ? '#241a38' : '#d6ecc9'} roughness={1} />
+        <meshStandardMaterial color={night ? '#241a38' : '#cfe8c2'} roughness={0.95} metalness={0} envMapIntensity={0.3} />
       </mesh>
       {!mobile && (
         <ContactShadows position={[0, -2.55, 0]} opacity={night ? 0.5 : 0.35} scale={30} blur={2.4} far={8} resolution={1024} color={night ? '#000010' : '#8a5a6a'} />
@@ -451,18 +506,29 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
 
       <Yggdrasil night={night} quality={quality} />
 
-      {/* couple holding hands at the base */}
-      <BlockyCharacter position={[-0.85, -2.6, 2.4]} facing={1} palette={boyPalette} />
-      <BlockyCharacter position={[0.85, -2.6, 2.4]} facing={-1} palette={girlPalette} />
+      {/* couple holding hands at the base, turned slightly toward each other */}
+      <group position={[0, 0, 2.6]}>
+        <BlockyCharacter position={[-0.8, -2.6, 0]} facing={1} palette={boyPalette} />
+        <BlockyCharacter position={[0.8, -2.6, 0]} facing={-1} palette={girlPalette} />
+      </group>
 
       <Petals count={mobile ? 22 : 55} night={night} />
       {!calm && <Sparkles count={mobile ? 30 : 80} scale={[22, 24, 14]} position={[0, 10, 0]} size={night ? 4 : 2.5} speed={0.3} color={night ? '#ffd0e6' : '#ffffff'} opacity={night ? 0.9 : 0.6} />}
 
       {!mobile && !calm && (
-        <EffectComposer>
-          <Bloom intensity={night ? 1.1 : 0.6} luminanceThreshold={night ? 0.3 : 0.65} luminanceSmoothing={0.9} mipmapBlur />
-          <DepthOfField focusDistance={zoom ? 0.008 : 0.02} focalLength={zoom ? 0.05 : 0.03} bokehScale={2.5} />
-          <Vignette eskil={false} offset={0.25} darkness={night ? 0.7 : 0.45} />
+        <EffectComposer multisampling={0} enableNormalPass>
+          {/* ambient occlusion — deep, soft contact shadows in crevices (the
+              single biggest contributor to a "rendered game" look) */}
+          <N8AO aoRadius={3} distanceFalloff={1} intensity={night ? 2.4 : 1.8} quality="high" halfRes color={night ? '#0a0414' : '#5a3348'} />
+          <Bloom intensity={night ? 1.1 : 0.7} luminanceThreshold={night ? 0.3 : 0.7} luminanceSmoothing={0.9} mipmapBlur radius={0.7} />
+          <DepthOfField focusDistance={zoom ? 0.008 : 0.02} focalLength={zoom ? 0.05 : 0.03} bokehScale={3} />
+          {/* filmic color grading */}
+          <HueSaturation saturation={night ? 0.08 : 0.14} hue={0} />
+          <BrightnessContrast brightness={0} contrast={0.08} />
+          <Vignette eskil={false} offset={0.22} darkness={night ? 0.72 : 0.42} />
+          {/* ACES tonemap pass + SMAA anti-aliasing (crisp edges) */}
+          <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+          <SMAA />
         </EffectComposer>
       )}
     </Canvas>
