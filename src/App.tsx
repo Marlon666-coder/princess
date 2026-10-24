@@ -1,11 +1,12 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
 import { isSupabaseConfigured } from './lib/supabase'
 import { Loading } from './components/UI'
 import { ConfigRequired } from './components/ConfigRequired'
 import { AppShell } from './components/AppShell'
-import { GrainOverlay, HeartCursor, LoadingScreen } from './components/motion'
+import { GrainOverlay, HeartCursor, HeartTrail, LoadingScreen } from './components/motion'
 import { WelcomePage } from './pages/WelcomePage'
 import { HomePage } from './pages/HomePage'
 import { DatesPage } from './pages/DatesPage'
@@ -36,14 +37,17 @@ function Application() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <LoadingScreen />
-      <GrainOverlay />
-      <HeartCursor />
-      <BrowserRouter>
-        <Application />
-        <Toaster richColors position="top-center" />
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <LoadingScreen />
+        <GrainOverlay />
+        <HeartCursor />
+        <HeartTrail />
+        <BrowserRouter>
+          <Application />
+          <Toaster richColors position="top-center" />
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }

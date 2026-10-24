@@ -361,3 +361,138 @@ html { scroll-behavior: smooth; }
   /* hearts/sparkles lighter on small screens handled by JS count; keep auroras calmer */
   .aurora { filter: blur(50px); opacity: 0.4; }
 }
+
+/* ============================================================
+   Night / romantic mode + theme toggle + heart trail
+   ============================================================ */
+
+/* ---- Theme toggle button ---- */
+.theme-toggle {
+  border: 0;
+  background: var(--blush);
+  color: var(--deep);
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.theme-toggle:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(169, 66, 100, 0.2); }
+.theme-toggle svg { width: 18px; height: 18px; }
+.theme-toggle-floating {
+  position: fixed;
+  top: 1.1rem;
+  right: 1.1rem;
+  z-index: 60;
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 22px rgba(129, 52, 78, 0.14);
+}
+
+/* ---- Heart trail (cursor) ---- */
+.heart-trail { position: fixed; inset: 0; z-index: 9998; pointer-events: none; }
+.heart-trail span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: -8px 0 0 -8px;
+  color: var(--rose);
+  line-height: 0;
+  will-change: transform, opacity;
+}
+.heart-trail svg { display: block; }
+
+/* ============================================================
+   NIGHT THEME
+   ============================================================ */
+[data-theme='night'] {
+  --rose: #ff9ebb;
+  --deep: #ffc2d6;
+  --blush: #2a1b2e;
+  --lavender: #2e2140;
+  --line: #3a2740;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  color: #f3dce6;
+  background: #140d1a;
+}
+[data-theme='night'] body,
+[data-theme='night'] html { background: #140d1a; }
+
+[data-theme='night'] h1 { color: #ffe0ec; }
+[data-theme='night'] h2 { color: #f6cfe0; }
+
+/* Backgrounds: deep night gradients */
+[data-theme='night'] .welcome-page {
+  background:
+    radial-gradient(circle at 20% 15%, rgba(80, 40, 90, 0.6), transparent 30%),
+    radial-gradient(circle at 80% 80%, rgba(60, 35, 95, 0.6), transparent 30%),
+    linear-gradient(135deg, #150d1c, #251436 52%, #1a1030);
+}
+[data-theme='night'] .app-shell {
+  background:
+    radial-gradient(circle at 75% 0, rgba(70, 40, 90, 0.4) 0, transparent 24%),
+    linear-gradient(145deg, #150d1c, #201433 55%, #180f28);
+}
+[data-theme='night'] .sakura-canvas {
+  background: radial-gradient(circle at 20% 15%, #1d1228, transparent 45%),
+    radial-gradient(circle at 80% 85%, #241640, transparent 45%),
+    linear-gradient(135deg, #150d1c, #231537 48%, #1a1030);
+}
+
+/* Glassy surfaces go dark */
+[data-theme='night'] .auth-card,
+[data-theme='night'] .config-card { background: rgba(38, 24, 48, 0.72); border-color: rgba(255, 255, 255, 0.06); }
+[data-theme='night'] .sidebar { background: rgba(28, 18, 38, 0.82); }
+[data-theme='night'] .card { background: rgba(38, 24, 48, 0.8); }
+[data-theme='night'] .quick-card,
+[data-theme='night'] .place-card,
+[data-theme='night'] .moment-card,
+[data-theme='night'] .video-card,
+[data-theme='night'] .date-card,
+[data-theme='night'] .cal-day-item { background: rgba(42, 27, 52, 0.85); border-color: var(--line); }
+[data-theme='night'] .card::before,
+[data-theme='night'] .quick-card::before {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 158, 187, 0.2));
+}
+
+/* Text tones */
+[data-theme='night'] .muted,
+[data-theme='night'] .page-subtitle,
+[data-theme='night'] .quick-card p,
+[data-theme='night'] .stats-grid span,
+[data-theme='night'] .date-ticket p,
+[data-theme='night'] .place-card p,
+[data-theme='night'] .moment-card p { color: #b79cb0; }
+[data-theme='night'] .stats-grid strong { color: #ffd9e7; }
+[data-theme='night'] .input {
+  background: rgba(20, 13, 26, 0.7);
+  border-color: #3d2a48;
+  color: #f3dce6;
+}
+[data-theme='night'] .stats-grid div,
+[data-theme='night'] .calendar-grid > button,
+[data-theme='night'] .calendar-grid > span { background: rgba(30, 19, 40, 0.8); border-color: var(--line); }
+
+/* Decorative layers tuned for night */
+[data-theme='night'] .aurora { mix-blend-mode: screen; opacity: 0.45; }
+[data-theme='night'] .aurora-1 { background: radial-gradient(circle, rgba(255, 120, 170, 0.5), transparent 70%); }
+[data-theme='night'] .aurora-2 { background: radial-gradient(circle, rgba(150, 110, 255, 0.5), transparent 70%); }
+[data-theme='night'] .aurora-3 { background: radial-gradient(circle, rgba(120, 180, 255, 0.4), transparent 70%); }
+[data-theme='night'] .grain-overlay { mix-blend-mode: screen; opacity: 0.06; }
+[data-theme='night'] .sparkles i { box-shadow: 0 0 8px rgba(255, 220, 240, 0.9); }
+[data-theme='night'] .loading-screen { background: radial-gradient(circle at 50% 40%, #241636, #160e22 60%, #120a1c); }
+[data-theme='night'] .theme-toggle { background: #322142; color: #ffd9e7; }
+[data-theme='night'] .theme-toggle-floating { background: rgba(40, 26, 52, 0.7); }
+
+/* smooth cross-fade when switching themes */
+.welcome-page, .app-shell, .card, .auth-card, .sidebar, .input,
+.quick-card, .place-card, .moment-card, .video-card, .date-card {
+  transition: background 0.5s ease, color 0.5s ease, border-color 0.5s ease;
+}
+
+@media (max-width: 760px) {
+  .theme-toggle-floating { top: 0.8rem; right: 0.8rem; }
+}

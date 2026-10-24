@@ -169,6 +169,111 @@ export function GrainOverlay() {
   return <div className="grain-overlay" aria-hidden="true" />
 }
 
+type TrailHeart = { id: number; x: number; y: number; size: number; hue: number }
+
+/**
+ * HeartTrail — spawns small SVG hearts along the cursor path that drift up and
+ * fade. Desktop + fine-pointer only; disabled under reduced motion. Throttled so
+ * it stays light. Uses SVG (never glyphs) so it renders crisply everywhere.
+ */
+export function HeartTrail() {
+  const [hearts, setHearts] = useState<TrailHeart[]>([])
+  const idRef = useRef(0)
+  const lastRef = useRef(0)
+
+  useEffect(() => {
+    if (reduced() || matchMedia('(pointer: coarse)').matches) return
+    const onMove = (event: MouseEvent) => {
+      const now = performance.now()
+      if (now - lastRef.current < 90) return // throttle
+      lastRef.current = now
+      const target = event.target as HTMLElement | null
+      // don't spill hearts while interacting with form controls
+      if (target?.closest('input, textarea, select')) return
+      const id = idRef.current++
+      const heart: TrailHeart = {
+        id,
+        x: event.clientX,
+        y: event.clientY,
+        size: 10 + Math.random() * 10,
+        hue: Math.random() * 20 - 10,
+      }
+      setHearts((current) => [...current.slice(-18), heart])
+      window.setTimeout(() => {
+        setHearts((current) => current.filter((h) => h.id !== id))
+      }, 900)
+    }
+    window.addEventListener('mousemove', onMove)
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [])
+
+  if (!hearts.length) return null
+  return (
+    <div className="heart-trail" aria-hidden="true">
+      {hearts.map((h) => (
+        <motion.span
+          key={h.id}
+          initial={{ opacity: 0.9, scale: 1, x: h.x, y: h.y }}
+          animate={{ opacity: 0, scale: 0.4, y: h.y - 40 }}
+          transition={{ duration: 0.9, ease: 'easeOut' }}
+          style={{ width: h.size, height: h.size, filter: `hue-rotate(${h.hue}deg)` }}
+        >
+          <svg viewBox="0 0 24 24" width="100%" height="100%" fill="currentColor">
+            <path d="M12 21s-7.5-4.6-10-9.3C.3 8.4 1.9 5 5.2 5c2 0 3.3 1.1 4 2.2.7-1.1 2-2.2 4-2.2 3.3 0 4.9 3.4 3.2 6.7C19.5 16.4 12 21 12 21z" />
+          </svg>
+        </motion.span>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Tilt — a card wrapper that tilts in 3D toward the cursor for depth.
+ * No-op under reduced motion or on touch devices.
+ */
+export function Tilt({
+  children,
+  max = 8,
+  className,
+}: {
+  children: ReactNode
+  max?: number
+  className?: string
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const rx = useSpring(useMotionValue(0), { stiffness: 200, damping: 20 })
+  const ry = useSpring(useMotionValue(0), { stiffness: 200, damping: 20 })
+  const disabled =
+    reduced() || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)
+
+  function onMove(event: React.MouseEvent<HTMLDivElement>) {
+    if (disabled || !ref.current) return
+    const rect = ref.current.getBoundingClientRect()
+    const px = (event.clientX - rect.left) / rect.width - 0.5
+    const py = (event.clientY - rect.top) / rect.height - 0.5
+    ry.set(px * max)
+    rx.set(-py * max)
+  }
+  function reset() {
+    rx.set(0)
+    ry.set(0)
+  }
+
+  if (disabled) return <div className={className}>{children}</div>
+
+  return (
+    <motion.div
+      ref={ref}
+      className={className}
+      onMouseMove={onMove}
+      onMouseLeave={reset}
+      style={{ rotateX: rx, rotateY: ry, transformStyle: 'preserve-3d', transformPerspective: 800 }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
 /**
  * LoadingScreen — a cinematic intro that fades out once the app is ready.
  */

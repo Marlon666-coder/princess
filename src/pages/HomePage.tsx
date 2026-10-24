@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { useRecords } from '../hooks/useRecords'
 import type { CoupleDate, Photo, Place, SpinHistory } from '../types'
 import { countdown, formatDate } from '../lib/utils'
-import { Counter, Magnetic, Reveal } from '../components/motion'
+import { Counter, Magnetic, Reveal, Tilt } from '../components/motion'
 import { PageHeader } from '../components/PageHeader'
 
 export function HomePage() {
@@ -31,7 +31,7 @@ export function HomePage() {
       subtitle="Sudah siap membuat kenangan baru?"
       actions={<div className="header-hearts">♡ <span>♥</span> ♡</div>}
     />
-    <section className="quick-grid">{actions.map(({ to, icon: Icon, title, text }, index) => <Reveal key={to} delay={index * 0.07}><Magnetic strength={0.18} className="quick-card-magnet"><Link to={to} className={`quick-card tone-${index}`}><Icon /><div><h3>{title}</h3><p>{text}</p></div><span>→</span></Link></Magnetic></Reveal>)}</section>
+    <section className="quick-grid">{actions.map(({ to, icon: Icon, title, text }, index) => <Reveal key={to} delay={index * 0.07}><Tilt max={7} className="quick-card-magnet"><Magnetic strength={0.12} className="quick-card-magnet"><Link to={to} className={`quick-card tone-${index}`}><Icon /><div><h3>{title}</h3><p>{text}</p></div><span>→</span></Link></Magnetic></Tilt></Reveal>)}</section>
     <Reveal delay={0.1} className="dashboard-grid">
       <section className="card next-date"><div className="section-title"><div><p className="eyebrow">Up next</p><h2>Next Date ❤️</h2></div><Link to="/app/dates">Lihat semua</Link></div>
         {next ? <><div className="date-ticket"><div className="date-number"><strong>{new Date(`${next.date}T00:00:00`).getDate()}</strong><span>{new Date(`${next.date}T00:00:00`).toLocaleDateString('id-ID', { month: 'short' })}</span></div><div><h3>{next.title}</h3><p><Clock3 /> {next.planned_start_time.slice(0,5)} — {next.planned_finish_time.slice(0,5)}</p><p><MapPin /> {next.location_name || 'Lokasi menyusul'}</p><small>{formatDate(next.date)}</small></div></div><div className="countdown"><small>Counting down to us</small><strong>{countdown(`${next.date}T${next.planned_start_time}`)}</strong></div></> : <div className="mini-empty"><Heart /><p>Belum ada rencana date.</p><Link to="/app/dates?new=1">Buat rencana pertama</Link></div>}

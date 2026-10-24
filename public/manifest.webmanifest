@@ -1,0 +1,19 @@
+{
+  "name": "Our Little World",
+  "short_name": "Our World",
+  "description": "Ruang kenangan pribadi untuk Nasywa.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff4f7",
+  "theme_color": "#dc6689",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
