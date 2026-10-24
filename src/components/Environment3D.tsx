@@ -84,8 +84,8 @@ function Sun({ night, position }: { night: boolean; position: [number, number, n
     const m = halo.current.material as MeshBasicMaterial
     m.opacity = (night ? 0.5 : 0.65) + Math.sin(clock.elapsedTime * 0.6) * 0.06
   })
-  const core = night ? '#fff4fb' : '#fff3d6'
-  const glow = night ? '#ffd9ec' : '#ffdca0'
+  const core = night ? '#fff4fb' : '#ffe6b0'
+  const glow = night ? '#ffd9ec' : '#ff8c3c'
   return (
     <group position={position}>
       {/* core disc */}
@@ -119,13 +119,13 @@ function DriftingClouds({ night }: { night: boolean }) {
     group.current.position.x += delta * 0.4
     if (group.current.position.x > 60) group.current.position.x = -60
   })
-  const tint = night ? '#c9b6e8' : '#ffffff'
+  const tint = night ? '#c9b6e8' : '#ffd9a8'
   return (
     <group ref={group}>
       <Clouds material={MeshBasicMaterial} limit={40}>
-        <Cloud seed={1} segments={28} bounds={[26, 5, 10]} volume={9} color={tint} opacity={night ? 0.5 : 0.85} fade={60} position={[-26, 30, -60]} speed={0.1} growth={5} />
-        <Cloud seed={4} segments={24} bounds={[22, 4, 8]} volume={8} color={night ? '#b8a3dd' : '#ffe6f1'} opacity={night ? 0.45 : 0.8} fade={60} position={[24, 34, -70]} speed={0.12} growth={4} />
-        <Cloud seed={7} segments={20} bounds={[18, 3, 7]} volume={6} color={tint} opacity={night ? 0.4 : 0.75} fade={50} position={[4, 40, -85]} speed={0.1} growth={4} />
+        <Cloud seed={1} segments={28} bounds={[26, 5, 10]} volume={9} color={tint} opacity={night ? 0.5 : 0.8} fade={70} position={[-26, 30, -60]} speed={0.1} growth={5} />
+        <Cloud seed={4} segments={24} bounds={[22, 4, 8]} volume={8} color={night ? '#b8a3dd' : '#ffb9a0'} opacity={night ? 0.45 : 0.78} fade={70} position={[24, 34, -70]} speed={0.12} growth={4} />
+        <Cloud seed={7} segments={20} bounds={[18, 3, 7]} volume={6} color={tint} opacity={night ? 0.4 : 0.7} fade={60} position={[4, 40, -85]} speed={0.1} growth={4} />
       </Clouds>
     </group>
   )
@@ -136,21 +136,20 @@ function DriftingClouds({ night }: { night: boolean }) {
  * a starfield. Everything is procedural; nothing is fetched.
  */
 export function Environment3D({ night, mobile }: { night: boolean; mobile: boolean }) {
-  // Sun low on the horizon for a golden-hour / moonrise feel.
-  const sunPos = useMemo<Vector3>(() => new Vector3(-30, 16, -80), [])
+  // Sun sitting low on the horizon (left) for a warm golden-hour sunset.
+  const sunPos = useMemo<Vector3>(() => new Vector3(-60, 8, -70), [])
 
   return (
     <group>
-      {/* Atmospheric sky with physical scattering */}
+      {/* Atmospheric sky with physical scattering, tuned for a sunset: sun near
+          the horizon + high turbidity/rayleigh gives the orange-pink gradient. */}
       <Sky
         distance={450000}
         sunPosition={[sunPos.x, sunPos.y, sunPos.z]}
-        inclination={night ? 0.52 : 0.49}
-        azimuth={0.25}
-        turbidity={night ? 10 : 6}
-        rayleigh={night ? 0.6 : 2.2}
-        mieCoefficient={0.006}
-        mieDirectionalG={0.85}
+        turbidity={night ? 12 : 10}
+        rayleigh={night ? 0.4 : 3.2}
+        mieCoefficient={night ? 0.008 : 0.025}
+        mieDirectionalG={night ? 0.8 : 0.93}
       />
 
       {night && <Stars radius={120} depth={60} count={mobile ? 1200 : 3500} factor={4} saturation={0} fade speed={0.6} />}
@@ -159,10 +158,10 @@ export function Environment3D({ night, mobile }: { night: boolean; mobile: boole
 
       {!mobile && <DriftingClouds night={night} />}
 
-      {/* Mountain ranges — far = hazy/light, near = darker */}
-      <MountainRange z={-95} baseY={-3} height={30} seed={1.2} color={night ? '#2b2440' : '#cdb8d8'} />
-      <MountainRange z={-78} baseY={-3} height={24} seed={3.7} color={night ? '#241d38' : '#b89bc8'} />
-      <MountainRange z={-62} baseY={-3} height={18} seed={6.1} color={night ? '#1d1730' : '#9f7fb4'} />
+      {/* Mountain ranges — far = hazy sunset lilac, near = dusky purple */}
+      <MountainRange z={-95} baseY={-3} height={30} seed={1.2} color={night ? '#2b2440' : '#e3a68f'} />
+      <MountainRange z={-78} baseY={-3} height={24} seed={3.7} color={night ? '#241d38' : '#c98aa0'} />
+      <MountainRange z={-62} baseY={-3} height={18} seed={6.1} color={night ? '#1d1730' : '#9e6a95'} />
     </group>
   )
 }

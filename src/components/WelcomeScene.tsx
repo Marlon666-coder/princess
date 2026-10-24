@@ -483,7 +483,8 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
   const calm = reduced()
   const quality: 'high' | 'low' = mobile ? 'low' : 'high'
 
-  const sky = night ? '#160d28' : '#ffe9f2'
+  // Warm golden-hour haze by day; deep indigo by night.
+  const sky = night ? '#2a1a3a' : '#ffb27a'
 
   return (
     <Canvas
@@ -498,9 +499,9 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
         toneMappingExposure: night ? 1.05 : 1.15,
       }}
     >
-      {/* Sky (in Environment3D) paints the background; fog blends the distant
-          mountains into the horizon for depth. */}
-      <fog attach="fog" args={[sky, 55, 140]} />
+      {/* Sky (in Environment3D) paints the background; light warm haze only in
+          the far distance so the scene stays clear, not washed-out white. */}
+      <fog attach="fog" args={[sky, 90, 200]} />
 
       <Environment3D night={night} mobile={mobile} />
 
@@ -510,18 +511,18 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
       {/* HDRI-style image-based lighting via in-scene lightformers (no network) */}
       <Environment resolution={mobile ? 128 : 256} frames={1}>
         <color attach="background" args={[night ? '#1a1030' : '#ffe9f2']} />
-        <Lightformer form="rect" intensity={night ? 0.8 : 2.2} position={[0, 14, 10]} scale={[18, 10, 1]} color={night ? '#d8c2ff' : '#fff6fb'} />
-        <Lightformer form="circle" intensity={night ? 0.5 : 1.1} position={[-10, 7, -6]} scale={10} color="#ffd6e6" />
-        <Lightformer form="circle" intensity={night ? 0.6 : 0.9} position={[10, 5, 4]} scale={8} color={night ? '#8fb0ff' : '#ffe8d6'} />
-        <Lightformer form="ring" intensity={night ? 1.2 : 0.6} position={[0, 20, 2]} scale={6} color={night ? '#ffc0dd' : '#fff0f6'} />
+        <Lightformer form="rect" intensity={night ? 0.8 : 2.4} position={[0, 14, 10]} scale={[18, 10, 1]} color={night ? '#c9b0ff' : '#ffd79a'} />
+        <Lightformer form="circle" intensity={night ? 0.5 : 1.4} position={[-10, 7, -6]} scale={10} color={night ? '#b79bff' : '#ff9e5c'} />
+        <Lightformer form="circle" intensity={night ? 0.6 : 0.9} position={[10, 5, 4]} scale={8} color={night ? '#8fb0ff' : '#ffc78a'} />
+        <Lightformer form="ring" intensity={night ? 1.2 : 0.7} position={[0, 20, 2]} scale={6} color={night ? '#ffc0dd' : '#ffe6c2'} />
       </Environment>
 
       <ambientLight intensity={night ? 0.35 : 0.55} />
-      {/* key sun/moon light with soft high-res shadows */}
+      {/* key sun light — warm golden-hour from the low sun (left), soft shadows */}
       <directionalLight
-        position={[9, 20, 8]}
-        intensity={night ? 1.1 : 2.6}
-        color={night ? '#cdb6ff' : '#fff4ec'}
+        position={[-24, 14, -20]}
+        intensity={night ? 1.1 : 3}
+        color={night ? '#b79bff' : '#ff9e4d'}
         castShadow={!mobile}
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0004}
@@ -533,8 +534,9 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
         shadow-camera-top={34}
         shadow-camera-bottom={-12}
       />
-      {/* rim/fill light for shape definition (the "AAA" wrap light) */}
-      <directionalLight position={[-10, 8, -8]} intensity={night ? 0.5 : 0.9} color={night ? '#7d6aff' : '#ffd0e2'} />
+      {/* warm sky fill + cool rim so forms read against the sunset */}
+      <directionalLight position={[12, 10, 8]} intensity={night ? 0.5 : 1} color={night ? '#7d6aff' : '#ffd9a0'} />
+      <hemisphereLight intensity={night ? 0.3 : 0.6} color={night ? '#5b4a8a' : '#ffcf9e'} groundColor={night ? '#1a1030' : '#caa07a'} />
 
       <CameraRig zoom={zoom} enableParallax={!mobile} />
 
