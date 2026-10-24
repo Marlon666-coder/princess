@@ -411,31 +411,38 @@ function LightShafts({ night }: { night: boolean }) {
 /* ----------------------------------------------------------------
    Small grass tufts scattered on the ground for lushness
 ----------------------------------------------------------------- */
-function GrassTufts({ night }: { night: boolean }) {
+function GrassTufts({ night, count }: { night: boolean; count: number }) {
   const blades = useMemo(
     () =>
-      Array.from({ length: 520 }, () => {
+      Array.from({ length: count }, () => {
         const a = Math.random() * Math.PI * 2
         // spread far and wide to fill the meadow toward the mountains
-        const r = 2 + Math.pow(Math.random(), 0.6) * 55
+        const r = 1.5 + Math.pow(Math.random(), 0.55) * 60
         return {
-          pos: [Math.cos(a) * r, -2.55, Math.sin(a) * r - 6] as Vector3Tuple,
+          pos: [Math.cos(a) * r, -2.6, Math.sin(a) * r - 6] as Vector3Tuple,
           rot: Math.random() * Math.PI,
-          h: 0.4 + Math.random() * 0.9,
-          lean: (Math.random() - 0.5) * 0.3,
+          // tall grass: much taller, varied
+          h: 1.1 + Math.random() * 2.2,
+          lean: (Math.random() - 0.5) * 0.5,
           far: r,
         }
       }),
-    [],
+    [count],
   )
-  const g1 = night ? '#2e6b48' : '#6cae5a'
-  const g2 = night ? '#244f38' : '#4f9145'
-  const g3 = night ? '#366f4e' : '#80c767'
+  const g1 = night ? '#2e6b48' : '#5ba048'
+  const g2 = night ? '#244f38' : '#478539'
+  const g3 = night ? '#366f4e' : '#74c25a'
+  const wind = useRef<Group>(null)
+  useFrame(({ clock }) => {
+    if (reduced() || !wind.current) return
+    wind.current.rotation.z = Math.sin(clock.elapsedTime * 0.8) * 0.04
+  })
   return (
-    <group>
+    <group ref={wind}>
       {blades.map((b, i) => (
         <mesh key={i} position={[b.pos[0], b.pos[1] + b.h / 2, b.pos[2]]} rotation={[b.lean, b.rot, b.lean]}>
-          <coneGeometry args={[0.1 + (b.far > 25 ? 0.12 : 0), b.h, 4]} />
+          {/* thin, tall blade */}
+          <coneGeometry args={[0.07, b.h, 3]} />
           <meshStandardMaterial color={[g1, g2, g3][i % 3]} roughness={0.95} flatShading />
         </mesh>
       ))}
@@ -450,17 +457,23 @@ function GrassTufts({ night }: { night: boolean }) {
 // Wide shot: far back + higher so the whole towering tree reads against the
 // sky, sun, clouds and distant mountains.
 const WIDE: Vector3Tuple = [2, 11, 44]
+// On mobile (narrow/tall), pull back a lot more and raise the camera so the
+// tree isn't cramped against the edges of the screen.
+const WIDE_MOBILE: Vector3Tuple = [0, 13, 62]
 // On enter, glide up and in toward the glowing heart of the canopy — a dreamy
 // "ascend into the blossoms" move instead of zooming to a character.
 const CLOSE: Vector3Tuple = [0.4, 15, 13]
+const CLOSE_MOBILE: Vector3Tuple = [0.4, 16, 20]
 const LOOK_WIDE: Vector3Tuple = [0, 10, 0]
 const LOOK_CLOSE: Vector3Tuple = [0, 19, 0]
 
-function CameraRig({ zoom, enableParallax }: { zoom: boolean; enableParallax: boolean }) {
+function CameraRig({ zoom, enableParallax, mobile }: { zoom: boolean; enableParallax: boolean; mobile: boolean }) {
   const { camera, mouse } = useThree()
   const look = useRef<Vector3Tuple>([...LOOK_WIDE])
   useFrame((_, delta) => {
-    const target = zoom ? CLOSE : WIDE
+    const wide = mobile ? WIDE_MOBILE : WIDE
+    const close = mobile ? CLOSE_MOBILE : CLOSE
+    const target = zoom ? close : wide
     const lookTarget = zoom ? LOOK_CLOSE : LOOK_WIDE
     const ease = 1 - Math.pow(zoom ? 0.02 : 0.05, delta)
     const px = enableParallax && !zoom ? mouse.x * 1.2 : 0
@@ -492,8 +505,8 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
   return (
     <Canvas
       shadows={!mobile ? { type: PCFSoftShadowMap } : false}
-      camera={{ position: WIDE, fov: 42 }}
-      dpr={[1, mobile ? 1.3 : 2]}
+      camera={{ position: mobile ? WIDE_MOBILE : WIDE, fov: mobile ? 56 : 42 }}
+      dpr={[1, mobile ? 1.5 : 2]}
       gl={{
         antialias: false,
         alpha: false,
@@ -541,7 +554,7 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
       <directionalLight position={[12, 10, 8]} intensity={night ? 0.5 : 1} color={night ? '#7d6aff' : '#ffd9a0'} />
       <hemisphereLight intensity={night ? 0.3 : 0.6} color={night ? '#5b4a8a' : '#ffcf9e'} groundColor={night ? '#1a1030' : '#caa07a'} />
 
-      <CameraRig zoom={zoom} enableParallax={!mobile} />
+      <CameraRig zoom={zoom} enableParallax={!mobile} mobile={mobile} />
 
       {/* vast grass meadow stretching to the mountains */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.6, -20]} receiveShadow>
@@ -557,7 +570,7 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
         <ContactShadows position={[0, -2.55, 0]} opacity={night ? 0.5 : 0.4} scale={30} blur={2.4} far={8} resolution={1024} color={night ? '#000010' : '#2f5a32'} />
       )}
 
-      {!mobile && <GrassTufts night={night} />}
+      <GrassTufts night={night} count={mobile ? 420 : 1100} />
 
       <Yggdrasil night={night} quality={quality} />
 
