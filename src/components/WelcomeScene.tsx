@@ -12,8 +12,7 @@ import {
   SMAA,
 } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
-import { Suspense, useMemo, useRef, useState } from 'react'
-import { CoupleCharacters } from './CoupleCharacters'
+import { useMemo, useRef, useState } from 'react'
 import {
   ACESFilmicToneMapping,
   CanvasTexture,
@@ -264,13 +263,16 @@ function Yggdrasil({ night, quality }: { night: boolean; quality: 'high' | 'low'
         })
       }
     }
-    const density = quality === 'high' ? 1 : 0.55
-    // huge crown
-    addCluster(0, 21, 0, 5.2, Math.round(70 * density), 1.5)
-    addCluster(0, 19.5, 0, 6.0, Math.round(55 * density), 1.7)
-    // per-branch
+    const density = quality === 'high' ? 1 : 0.5
+    // vast, full crown built from several overlapping domes
+    addCluster(0, 21, 0, 6.0, Math.round(110 * density), 1.6)
+    addCluster(0, 19.5, 0, 6.8, Math.round(90 * density), 1.9)
+    addCluster(0, 22.5, 0, 4.4, Math.round(60 * density), 1.4)
+    addCluster(-3, 20, 1, 4.0, Math.round(45 * density), 1.5)
+    addCluster(3, 20.5, -1, 4.0, Math.round(45 * density), 1.5)
+    // per-branch tufts
     for (const br of branches) {
-      addCluster(br.canopy[0], br.canopy[1], br.canopy[2], br.size, Math.round(26 * density), 1.2)
+      addCluster(br.canopy[0], br.canopy[1], br.canopy[2], br.size, Math.round(40 * density), 1.25)
     }
     return out
   }, [branches, blossom, quality])
@@ -362,15 +364,87 @@ function Petals({ count, night }: { count: number; night: boolean }) {
 }
 
 /* ----------------------------------------------------------------
+   Volumetric-style light shafts streaming down through the canopy —
+   cheap additive cones that fake god rays for a cinematic UE-ish feel.
+----------------------------------------------------------------- */
+function LightShafts({ night }: { night: boolean }) {
+  const shafts = useMemo(
+    () =>
+      Array.from({ length: 6 }, (_, i) => {
+        const a = (i / 6) * Math.PI * 2
+        return { x: Math.cos(a) * 2.2, z: Math.sin(a) * 2.2, rot: (Math.random() - 0.5) * 0.3, h: 16 + Math.random() * 4 }
+      }),
+    [],
+  )
+  const group = useRef<Group>(null)
+  useFrame(({ clock }) => {
+    if (reduced() || !group.current) return
+    const t = clock.elapsedTime
+    group.current.children.forEach((c, i) => {
+      const m = c as unknown as { material?: { opacity?: number } }
+      if (m.material) m.material.opacity = (night ? 0.14 : 0.08) + Math.sin(t * 0.5 + i) * 0.03
+    })
+  })
+  return (
+    <group ref={group} position={[0, 10, 0]}>
+      {shafts.map((s, i) => (
+        <mesh key={i} position={[s.x, 0, s.z]} rotation={[0, 0, s.rot]}>
+          <coneGeometry args={[2.4, s.h, 16, 1, true]} />
+          <meshBasicMaterial
+            color={night ? '#ffc6e2' : '#fff4da'}
+            transparent
+            opacity={night ? 0.14 : 0.08}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+/* ----------------------------------------------------------------
+   Small grass tufts scattered on the ground for lushness
+----------------------------------------------------------------- */
+function GrassTufts({ night }: { night: boolean }) {
+  const blades = useMemo(
+    () =>
+      Array.from({ length: 140 }, () => {
+        const a = Math.random() * Math.PI * 2
+        const r = 4 + Math.random() * 20
+        return {
+          pos: [Math.cos(a) * r, -2.55, Math.sin(a) * r] as Vector3Tuple,
+          rot: Math.random() * Math.PI,
+          h: 0.4 + Math.random() * 0.7,
+          lean: (Math.random() - 0.5) * 0.3,
+        }
+      }),
+    [],
+  )
+  const g1 = night ? '#2e6b48' : '#6cae5a'
+  const g2 = night ? '#244f38' : '#4f9145'
+  return (
+    <group>
+      {blades.map((b, i) => (
+        <mesh key={i} position={[b.pos[0], b.pos[1] + b.h / 2, b.pos[2]]} rotation={[b.lean, b.rot, b.lean]}>
+          <coneGeometry args={[0.12, b.h, 4]} />
+          <meshStandardMaterial color={i % 2 ? g1 : g2} roughness={0.9} flatShading />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+/* ----------------------------------------------------------------
    Camera rig — wide establishing shot of the whole tree, easing to a
-   close zoom on the couple when `zoom` turns true.
+   close zoom when `zoom` turns true.
 ----------------------------------------------------------------- */
 // Wide shot pulled far back + a touch higher so the whole towering tree reads.
 const WIDE: Vector3Tuple = [1.5, 9, 40]
-// Close shot drops to eye level with the couple at the base and moves in on them.
-const CLOSE: Vector3Tuple = [0, -0.6, 6.5]
+// On enter, glide up and in toward the glowing heart of the canopy — a dreamy
+// "ascend into the blossoms" move instead of zooming to a character.
+const CLOSE: Vector3Tuple = [0.4, 15, 13]
 const LOOK_WIDE: Vector3Tuple = [0, 10, 0]
-const LOOK_CLOSE: Vector3Tuple = [0, -1.1, 2.4]
+const LOOK_CLOSE: Vector3Tuple = [0, 19, 0]
 
 function CameraRig({ zoom, enableParallax }: { zoom: boolean; enableParallax: boolean }) {
   const { camera, mouse } = useThree()
@@ -463,12 +537,13 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
         <ContactShadows position={[0, -2.55, 0]} opacity={night ? 0.5 : 0.35} scale={30} blur={2.4} far={8} resolution={1024} color={night ? '#000010' : '#8a5a6a'} />
       )}
 
+      {!mobile && <GrassTufts night={night} />}
+
       <Yggdrasil night={night} quality={quality} />
 
-      {/* rigged, smoothly-animated couple at the base (loaded async) */}
-      <Suspense fallback={null}>
-        <CoupleCharacters position={[0, -2.6, 2.6]} />
-      </Suspense>
+      {!calm && <LightShafts night={night} />}
+
+
 
       <Petals count={mobile ? 22 : 55} night={night} />
       {!calm && <Sparkles count={mobile ? 30 : 80} scale={[22, 24, 14]} position={[0, 10, 0]} size={night ? 4 : 2.5} speed={0.3} color={night ? '#ffd0e6' : '#ffffff'} opacity={night ? 0.9 : 0.6} />}
