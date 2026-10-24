@@ -452,13 +452,16 @@ function GrassTufts({ night, count }: { night: boolean; count: number }) {
       grass.current?.setColorAt(index, new Color(colors[blade.tone]))
     })
     grass.current.instanceMatrix.needsUpdate = true
+    // setColorAt allocates instanceColor; flag it so the colours actually show
     if (grass.current.instanceColor) grass.current.instanceColor.needsUpdate = true
   }, [blades, night])
 
   return (
     <instancedMesh ref={grass} args={[undefined, undefined, count]} castShadow receiveShadow>
       <coneGeometry args={[0.055, 1, 3]} />
-      <meshStandardMaterial vertexColors roughness={0.96} />
+      {/* base color (no vertexColors) — instanceColor tints per blade, and this
+          guarantees a green fallback instead of black if colours lag a frame */}
+      <meshStandardMaterial color={night ? '#3d7350' : '#6aaa52'} roughness={0.96} />
     </instancedMesh>
   )
 }
@@ -532,7 +535,9 @@ function FlowerField({ night, count }: { night: boolean; count: number }) {
       </instancedMesh>
       <instancedMesh ref={blossoms} args={[undefined, undefined, count]} castShadow>
         <icosahedronGeometry args={[0.13, 1]} />
-        <meshStandardMaterial vertexColors roughness={0.7} emissive={night ? '#301328' : '#1a050b'} emissiveIntensity={night ? 0.32 : 0.08} />
+        {/* base color (no vertexColors) so blossoms are never black; instanceColor
+            tints each one pink/white/violet/etc. */}
+        <meshStandardMaterial color={night ? '#ff8fbd' : '#f06f9f'} roughness={0.7} emissive={night ? '#301328' : '#1a050b'} emissiveIntensity={night ? 0.32 : 0.08} />
       </instancedMesh>
       <instancedMesh ref={centres} args={[undefined, undefined, count]}>
         <sphereGeometry args={[0.045, 6, 4]} />
