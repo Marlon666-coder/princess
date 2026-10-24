@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useRecords } from '../hooks/useRecords'
 import type { CoupleDate, Photo, Place, SpinHistory } from '../types'
 import { countdown, formatDate } from '../lib/utils'
+import { Counter, Magnetic, Reveal } from '../components/motion'
 
 export function HomePage() {
   const { records: dates } = useRecords<CoupleDate>('dates', 'date', true)
@@ -23,14 +24,14 @@ export function HomePage() {
   ]
   return <main className="page">
     <header className="page-header hero-header"><div><p className="eyebrow">{new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(new Date())}, our favorite kind of day</p><h1>Hi, Nasywa <span>❤️</span></h1><p>Sudah siap membuat kenangan baru?</p></div><div className="header-hearts">♡ <span>♥</span> ♡</div></header>
-    <section className="quick-grid">{actions.map(({ to, icon: Icon, title, text }, index) => <Link to={to} className={`quick-card tone-${index}`} key={to}><Icon /><div><h3>{title}</h3><p>{text}</p></div><span>→</span></Link>)}</section>
-    <div className="dashboard-grid">
+    <section className="quick-grid">{actions.map(({ to, icon: Icon, title, text }, index) => <Reveal key={to} delay={index * 0.07}><Magnetic strength={0.18} className="quick-card-magnet"><Link to={to} className={`quick-card tone-${index}`}><Icon /><div><h3>{title}</h3><p>{text}</p></div><span>→</span></Link></Magnetic></Reveal>)}</section>
+    <Reveal delay={0.1} className="dashboard-grid">
       <section className="card next-date"><div className="section-title"><div><p className="eyebrow">Up next</p><h2>Next Date ❤️</h2></div><Link to="/app/dates">Lihat semua</Link></div>
         {next ? <><div className="date-ticket"><div className="date-number"><strong>{new Date(`${next.date}T00:00:00`).getDate()}</strong><span>{new Date(`${next.date}T00:00:00`).toLocaleDateString('id-ID', { month: 'short' })}</span></div><div><h3>{next.title}</h3><p><Clock3 /> {next.planned_start_time.slice(0,5)} — {next.planned_finish_time.slice(0,5)}</p><p><MapPin /> {next.location_name || 'Lokasi menyusul'}</p><small>{formatDate(next.date)}</small></div></div><div className="countdown"><small>Counting down to us</small><strong>{countdown(`${next.date}T${next.planned_start_time}`)}</strong></div></> : <div className="mini-empty"><Heart /><p>Belum ada rencana date.</p><Link to="/app/dates?new=1">Buat rencana pertama</Link></div>}
       </section>
       <section className="card"><div className="section-title"><div><p className="eyebrow">Our journey</p><h2>Little Statistics</h2></div></div><div className="stats-grid">
-        <div><Heart /><strong>{completed.length}</strong><span>Dates Together</span></div><div><MapPin /><strong>{places.length}</strong><span>Places Visited</span></div><div><Camera /><strong>{photos.length}</strong><span>Photos</span></div><div><Star /><strong>{places.filter((p) => p.is_favorite).length}</strong><span>Favorite Places</span></div><div><Clock3 /><strong>{Math.round(totalMs / 3600000)}</strong><span>Hours Together</span></div><div><FerrisWheel /><strong>{spins.length}</strong><span>Wheel Spins</span></div>
+        <div><Heart /><strong><Counter value={completed.length} /></strong><span>Dates Together</span></div><div><MapPin /><strong><Counter value={places.length} /></strong><span>Places Visited</span></div><div><Camera /><strong><Counter value={photos.length} /></strong><span>Photos</span></div><div><Star /><strong><Counter value={places.filter((p) => p.is_favorite).length} /></strong><span>Favorite Places</span></div><div><Clock3 /><strong><Counter value={Math.round(totalMs / 3600000)} /></strong><span>Hours Together</span></div><div><FerrisWheel /><strong><Counter value={spins.length} /></strong><span>Wheel Spins</span></div>
       </div></section>
-    </div>
+    </Reveal>
   </main>
 }

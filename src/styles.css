@@ -19,3 +19,119 @@
 .video-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem}.video-card{background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;cursor:pointer;transition:.25s}.video-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}.video-thumb{position:relative;aspect-ratio:16/10;background:#1a0d12;display:grid;place-items:center;overflow:hidden}.video-thumb>video{width:100%;height:100%;object-fit:cover}.video-thumb .moment-placeholder{font-size:2.6rem}.video-play{position:absolute;inset:0;margin:auto;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.9);color:var(--rose);display:grid;place-items:center;box-shadow:0 6px 20px rgba(60,20,35,.3)}.video-play svg{width:22px;margin-left:3px}.video-dur{position:absolute;right:.5rem;bottom:.5rem;background:rgba(26,13,18,.82);color:#fff;font-size:.65rem;padding:.15rem .4rem;border-radius:6px}.video-meta{padding:1rem}.video-meta small{color:var(--rose);font-size:.72rem}.video-meta h3{margin:.3rem 0}.video-meta span{display:flex;align-items:center;gap:.4rem;color:#a0848e;font-size:.75rem}.video-meta svg{width:14px}.lightbox-content>video{width:100%;height:100%;max-height:90vh;object-fit:contain;background:#140a0e}
 @media(max-width:1050px){.video-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:760px){.bottom-nav{grid-template-columns:repeat(7,1fr)}.bottom-nav a{font-size:.52rem}.bottom-nav svg{width:17px}.video-grid{grid-template-columns:1fr}.lightbox-content>video{max-height:60vh}}
+
+/* ============================================================
+   Premium 3D / motion experience — added layer
+   ============================================================ */
+
+/* Custom heart cursor (desktop, fine pointers only) */
+@media (pointer: fine) {
+  .heart-cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    margin: -11px 0 0 -9px;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--rose);
+    pointer-events: none;
+    will-change: transform;
+    text-shadow: 0 2px 10px rgba(220, 102, 137, 0.55);
+    mix-blend-mode: multiply;
+  }
+}
+@media (pointer: coarse) {
+  .heart-cursor { display: none; }
+}
+
+/* Filmic grain overlay — subtle, fixed, non-interactive */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  opacity: 0.045;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grainShift 8s steps(6) infinite;
+}
+@keyframes grainShift {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-3%, 2%); }
+  40% { transform: translate(2%, -3%); }
+  60% { transform: translate(-2%, -2%); }
+  80% { transform: translate(3%, 2%); }
+  100% { transform: translate(0, 0); }
+}
+
+/* Cinematic loading screen */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1rem;
+  background: radial-gradient(circle at 50% 40%, #fff6fa, #fbdbe8 55%, #f6e3f7);
+}
+.loading-heart {
+  font-size: clamp(3rem, 10vw, 5rem);
+  color: var(--rose);
+  filter: drop-shadow(0 10px 30px rgba(220, 102, 137, 0.45));
+  will-change: transform;
+}
+.loading-screen p {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  color: var(--deep);
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+
+/* Animated gradient-mesh drift behind welcome + app shell */
+.welcome-page::before,
+.app-shell::before {
+  content: '';
+  position: fixed;
+  inset: -20%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(40% 40% at 20% 20%, rgba(255, 183, 206, 0.45), transparent 60%),
+    radial-gradient(45% 45% at 80% 25%, rgba(216, 180, 232, 0.4), transparent 60%),
+    radial-gradient(40% 40% at 60% 85%, rgba(255, 207, 218, 0.45), transparent 60%);
+  filter: blur(10px);
+  animation: meshDrift 18s ease-in-out infinite alternate;
+}
+@keyframes meshDrift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(2%, -2%, 0) scale(1.05); }
+  100% { transform: translate3d(-2%, 2%, 0) scale(1.02); }
+}
+
+/* Richer glassmorphism + spring-feel hover on cards */
+.quick-card-magnet { width: 100%; }
+.quick-card-magnet > a { width: 100%; }
+.quick-card {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.78);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+}
+.card {
+  backdrop-filter: blur(14px);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease;
+}
+.card:hover {
+  box-shadow: 0 22px 60px rgba(129, 52, 78, 0.14);
+}
+
+/* Keep the night-mode-friendly contrast sane on the animated layers */
+@media (prefers-reduced-motion: reduce) {
+  .grain-overlay,
+  .welcome-page::before,
+  .app-shell::before,
+  .loading-heart { animation: none !important; }
+}
