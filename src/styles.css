@@ -496,3 +496,91 @@ html { scroll-behavior: smooth; }
 @media (max-width: 760px) {
   .theme-toggle-floating { top: 0.8rem; right: 0.8rem; }
 }
+
+/* ============================================================
+   Cinematic welcome scene (3D sakura tree + characters)
+   ============================================================ */
+.welcome-cinematic {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  overflow: hidden;
+  background: #ffeef5;
+}
+[data-theme='night'] .welcome-cinematic { background: #1a1030; }
+
+.welcome-cinematic .scene-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+.welcome-cinematic .scene-layer canvas { display: block; width: 100% !important; height: 100% !important; }
+
+/* readability vignette on top of the 3D scene */
+.welcome-cinematic .scene-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 50% 38%, transparent 40%, rgba(60, 25, 45, 0.28) 100%),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.12), transparent 30%, transparent 70%, rgba(80, 35, 60, 0.3));
+}
+[data-theme='night'] .welcome-cinematic .scene-vignette {
+  background:
+    radial-gradient(120% 80% at 50% 38%, transparent 38%, rgba(10, 5, 20, 0.5) 100%),
+    linear-gradient(to bottom, rgba(40, 20, 60, 0.15), transparent 30%, transparent 65%, rgba(8, 4, 16, 0.55));
+}
+
+.welcome-cinematic .scene-overlay { position: relative; z-index: 3; }
+
+/* Intro copy sits in the upper area so the tree + characters stay visible */
+.welcome-cinematic .welcome-content {
+  text-align: center;
+  align-self: start;
+  margin-top: clamp(2rem, 7vh, 5rem);
+  max-width: 680px;
+}
+.welcome-cinematic .scene-title {
+  text-shadow: 0 4px 30px rgba(60, 20, 40, 0.45);
+}
+.welcome-cinematic .scene-tagline {
+  font: italic 1.2rem 'Playfair Display', serif;
+  color: #6f2a44;
+  margin: 0.4rem 0 1.6rem;
+  text-shadow: 0 2px 12px rgba(255, 255, 255, 0.6);
+}
+[data-theme='night'] .welcome-cinematic .scene-title { color: #ffe0ec; }
+[data-theme='night'] .welcome-cinematic .scene-tagline { color: #f0c4d6; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5); }
+
+/* the transient heart shown while the camera zooms */
+.welcome-cinematic .scene-hint {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 3;
+  pointer-events: none;
+}
+.welcome-cinematic .scene-hint svg {
+  width: 56px;
+  height: 56px;
+  color: var(--rose);
+  filter: drop-shadow(0 8px 26px rgba(220, 102, 137, 0.6));
+}
+
+/* login card floats centered over the zoomed scene */
+.welcome-cinematic .auth-card {
+  align-self: center;
+  backdrop-filter: blur(22px);
+  background: rgba(255, 255, 255, 0.82);
+}
+[data-theme='night'] .welcome-cinematic .auth-card { background: rgba(38, 24, 48, 0.8); }
+
+@media (max-width: 760px) {
+  .welcome-cinematic .welcome-content { margin-top: clamp(1rem, 4vh, 3rem); }
+  .welcome-cinematic .scene-tagline { font-size: 1.05rem; }
+}
