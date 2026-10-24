@@ -6,6 +6,7 @@ import { Button, EmptyState, Input, Modal, Select, Textarea } from '../component
 import { useRecords } from '../hooks/useRecords'
 import { friendlyError, supabase } from '../lib/supabase'
 import { formatDate, formatDateTime, formatDuration } from '../lib/utils'
+import { PageHeader } from '../components/PageHeader'
 import type { CoupleDate, DateActivity, DateStatus } from '../types'
 
 const today = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
@@ -91,7 +92,12 @@ export function DatesPage() {
   }
 
   return <main className="page">
-    <header className="page-header"><div><p className="eyebrow">Our plans</p><h1>Dates Together ❤️</h1><p>Setiap rencana kecil bisa menjadi kenangan besar.</p></div><Button onClick={() => setFormOpen(true)}><Plus /> Plan a Date</Button></header>
+    <PageHeader
+      eyebrow="Our plans"
+      title={<>Dates Together <Heart className="inline-heart" fill="currentColor" /></>}
+      subtitle="Setiap rencana kecil bisa menjadi kenangan besar."
+      actions={<Button onClick={() => setFormOpen(true)}><Plus /> Plan a Date</Button>}
+    />
     <div className="segmented"><button className={view === 'list' ? 'active' : ''} onClick={() => setView('list')}>Daftar</button><button className={view === 'calendar' ? 'active' : ''} onClick={() => setView('calendar')}>Kalender</button></div>
     {loading ? <div className="skeleton-list" /> : !dates.length ? <EmptyState icon="💌" title="Belum ada rencana date." text="Mau pergi ke mana bersama Nasywa?" /> : view === 'list' ? <section className="date-list">{dates.map((date) => <article className="date-card" key={date.id} onClick={() => setSelected(date)}><div className="date-number"><strong>{new Date(`${date.date}T00:00:00`).getDate()}</strong><span>{new Date(`${date.date}T00:00:00`).toLocaleDateString('id-ID', { month: 'short' })}</span></div><div className="date-main"><span className={`status status-${date.status}`}>{date.status}</span><h2>{date.title}</h2><p><Clock3 /> {date.planned_start_time.slice(0,5)} — {date.planned_finish_time.slice(0,5)}</p><p><MapPin /> {date.location_name || 'Lokasi menyusul'}</p></div><span className="open-arrow">→</span></article>)}</section> : <CalendarView grouped={grouped} onSelect={setSelected} />}
 

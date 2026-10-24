@@ -5,6 +5,7 @@ import { useRecords } from '../hooks/useRecords'
 import type { CoupleDate, Photo, Place, SpinHistory } from '../types'
 import { countdown, formatDate } from '../lib/utils'
 import { Counter, Magnetic, Reveal } from '../components/motion'
+import { PageHeader } from '../components/PageHeader'
 
 export function HomePage() {
   const { records: dates } = useRecords<CoupleDate>('dates', 'date', true)
@@ -23,7 +24,13 @@ export function HomePage() {
     { to: '/app/spin', icon: FerrisWheel, title: 'Spin The Wheel', text: 'Biarkan semesta memilih' },
   ]
   return <main className="page">
-    <header className="page-header hero-header"><div><p className="eyebrow">{new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(new Date())}, our favorite kind of day</p><h1>Hi, Nasywa <span>❤️</span></h1><p>Sudah siap membuat kenangan baru?</p></div><div className="header-hearts">♡ <span>♥</span> ♡</div></header>
+    <PageHeader
+      hero
+      eyebrow={`${new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(new Date())}, our favorite kind of day`}
+      title={<>Hi, Nasywa <Heart className="inline-heart" fill="currentColor" /></>}
+      subtitle="Sudah siap membuat kenangan baru?"
+      actions={<div className="header-hearts">♡ <span>♥</span> ♡</div>}
+    />
     <section className="quick-grid">{actions.map(({ to, icon: Icon, title, text }, index) => <Reveal key={to} delay={index * 0.07}><Magnetic strength={0.18} className="quick-card-magnet"><Link to={to} className={`quick-card tone-${index}`}><Icon /><div><h3>{title}</h3><p>{text}</p></div><span>→</span></Link></Magnetic></Reveal>)}</section>
     <Reveal delay={0.1} className="dashboard-grid">
       <section className="card next-date"><div className="section-title"><div><p className="eyebrow">Up next</p><h2>Next Date ❤️</h2></div><Link to="/app/dates">Lihat semua</Link></div>

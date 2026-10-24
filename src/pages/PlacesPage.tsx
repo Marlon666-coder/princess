@@ -6,6 +6,7 @@ import { Button, EmptyState, Input, Modal, Select, Stars, Textarea } from '../co
 import { useRecords } from '../hooks/useRecords'
 import { friendlyError, supabase } from '../lib/supabase'
 import { formatDate, mapsUrl } from '../lib/utils'
+import { PageHeader } from '../components/PageHeader'
 import type { Place, PlaceCategory } from '../types'
 
 const libraries: ('places')[] = ['places']
@@ -48,7 +49,12 @@ export function PlacesPage() {
   const rating = (key: keyof typeof form, label: string) => <div className="rating-row"><span>{label}</span><Stars value={Number(form[key])} onChange={(value) => setForm((current) => ({ ...current, [key]: value }))} /></div>
 
   return <main className="page">
-    <header className="page-header"><div><p className="eyebrow">Our map of memories</p><h1>Places We've Been 📍</h1><p>Tempat biasa menjadi istimewa karena kita datang bersama.</p></div><Button onClick={() => openForm()}><Plus /> Add Place</Button></header>
+    <PageHeader
+      eyebrow="Our map of memories"
+      title="Places We've Been 📍"
+      subtitle="Tempat biasa menjadi istimewa karena kita datang bersama."
+      actions={<Button onClick={() => openForm()}><Plus /> Add Place</Button>}
+    />
     {!apiKey && <div className="notice"><MapPin /><div><strong>Google Maps belum diaktifkan</strong><p>Isi <code>VITE_GOOGLE_MAPS_API_KEY</code> untuk place search dan peta. Input manual serta link Google Maps tetap bekerja.</p></div></div>}
     <div className="filter-row">{['all','favorite',...categories].map((item) => <button key={item} className={filter === item ? 'active' : ''} onClick={() => setFilter(item)}>{item === 'favorite' ? '❤️ Favorite' : item}</button>)}</div>
     {loading ? <div className="skeleton-list" /> : !visible.length ? <EmptyState icon="📍" title="Belum ada tempat di sini." text="Tambahkan tempat pertama yang ingin kita kunjungi." /> : <section className="places-grid">{visible.map((place) => <article className="place-card" key={place.id} onClick={() => setSelected(place)}><div className="place-visual"><MapPin /><button className={place.is_favorite ? 'favorite active' : 'favorite'} onClick={(event) => { event.stopPropagation(); void toggleFavorite(place) }}><Heart fill={place.is_favorite ? 'currentColor' : 'none'} /></button></div><div><span className="category-pill">{place.category}</span><h2>{place.name}</h2><p>{place.address || 'Alamat belum ditambahkan'}</p><div className="place-footer"><Stars value={place.rating_overall} /><small>{place.visit_date ? formatDate(place.visit_date) : 'Belum dikunjungi'}</small></div></div></article>)}</section>}

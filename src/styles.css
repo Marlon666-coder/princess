@@ -162,3 +162,202 @@
 @media (prefers-reduced-motion: reduce) {
   .welcome-content h1 .title-heart { animation: none; }
 }
+
+/* ============================================================
+   Immersive atmosphere + whole-app decorative polish
+   ============================================================ */
+
+/* ---- Global niceties: selection, scrollbar, focus ---- */
+::selection { background: rgba(220, 102, 137, 0.22); color: #4a2934; }
+html { scroll-behavior: smooth; }
+* { scrollbar-width: thin; scrollbar-color: #e8aec0 transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(#edaec1, #d97fa0);
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: linear-gradient(#e79ab2, #c9698d); background-clip: padding-box; }
+:where(a, button, input, textarea, select):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(220, 102, 137, 0.28);
+  border-radius: 12px;
+}
+
+/* ---- Ambiance layer (aurora + floating hearts + sparkles) ---- */
+.ambiance {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ambiance-app { z-index: 0; }
+.ambiance-auth { z-index: 1; }
+
+.aurora {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  will-change: transform;
+}
+.aurora-1 {
+  width: 46vw; height: 46vw;
+  top: -12vw; left: -8vw;
+  background: radial-gradient(circle, rgba(255, 160, 190, 0.7), transparent 70%);
+  animation: auroraA 22s ease-in-out infinite alternate;
+}
+.aurora-2 {
+  width: 40vw; height: 40vw;
+  bottom: -14vw; right: -6vw;
+  background: radial-gradient(circle, rgba(203, 167, 229, 0.65), transparent 70%);
+  animation: auroraB 26s ease-in-out infinite alternate;
+}
+.aurora-3 {
+  width: 34vw; height: 34vw;
+  top: 40%; left: 55%;
+  background: radial-gradient(circle, rgba(255, 206, 170, 0.5), transparent 70%);
+  animation: auroraC 30s ease-in-out infinite alternate;
+}
+@keyframes auroraA { to { transform: translate3d(8vw, 6vh, 0) scale(1.15); } }
+@keyframes auroraB { to { transform: translate3d(-7vw, -5vh, 0) scale(1.1); } }
+@keyframes auroraC { to { transform: translate3d(-9vw, 7vh, 0) scale(1.2); } }
+
+.floating-hearts span {
+  position: absolute;
+  bottom: -5%;
+  color: var(--rose);
+  display: block;
+  line-height: 1;
+  font-size: 1rem;
+  animation-name: floatUp;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+@keyframes floatUp {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-108vh) rotate(40deg); opacity: 0; }
+}
+.sparkles i {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff, rgba(255, 221, 235, 0.6));
+  box-shadow: 0 0 6px rgba(255, 180, 205, 0.9);
+  animation-name: twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.4); }
+  50% { opacity: 0.9; transform: scale(1); }
+}
+
+/* keep app content above the ambiance */
+.app-content, .sidebar, .bottom-nav { position: relative; z-index: 2; }
+.welcome-content, .auth-card { z-index: 3; }
+
+/* ---- Decorated page headers ---- */
+.page-header-text { min-width: 0; }
+.eyebrow-glow {
+  display: inline-block;
+  background: linear-gradient(90deg, var(--rose), #b57fd0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.title-glow {
+  position: relative;
+  text-shadow: 0 2px 30px rgba(220, 102, 137, 0.18);
+}
+.title-glow .inline-heart {
+  display: inline-block;
+  width: 0.78em; height: 0.78em;
+  vertical-align: -0.04em;
+  color: var(--rose);
+  filter: drop-shadow(0 4px 12px rgba(220, 102, 137, 0.4));
+  animation: heartPulse 2.4s ease-in-out infinite;
+}
+.title-flourish {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0.5rem 0 0.4rem;
+  color: #e3a7bc;
+  font-size: 0.9rem;
+}
+.title-flourish i {
+  display: block;
+  height: 1px;
+  width: clamp(28px, 7vw, 80px);
+  background: linear-gradient(90deg, transparent, #e9b3c5);
+}
+.title-flourish i:last-child { background: linear-gradient(90deg, #e9b3c5, transparent); }
+.page-subtitle { color: #967481; margin: 0.3rem 0 0; }
+.hero-header .title-flourish { justify-content: flex-start; }
+
+/* ---- Richer cards: soft glowing border + lift ---- */
+.card, .quick-card, .place-card, .moment-card, .video-card, .date-card {
+  position: relative;
+}
+.card::before, .quick-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(236, 183, 201, 0.35));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* ---- Welcome hero: extra glow behind the heart orbit ---- */
+.heart-orbit {
+  position: relative;
+  box-shadow: 0 0 40px rgba(220, 102, 137, 0.25);
+}
+.heart-orbit::after {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  border: 1px dashed rgba(220, 102, 137, 0.3);
+  animation: spin 18s linear infinite;
+}
+
+/* ---- Sidebar logo subtle glow + nav active accent ---- */
+.logo > span { box-shadow: 0 10px 24px rgba(196, 91, 125, 0.35); }
+.sidebar nav a.active {
+  background: linear-gradient(90deg, #ffe6ee, rgba(239, 229, 247, 0.6));
+}
+
+/* ---- Buttons: sheen sweep on hover ---- */
+.button-primary { position: relative; overflow: hidden; }
+.button-primary::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -120%;
+  width: 60%; height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: skewX(-18deg);
+  transition: left 0.6s ease;
+}
+.button-primary:hover::after { left: 140%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora, .heart-orbit::after, .title-glow .inline-heart { animation: none !important; }
+  html { scroll-behavior: auto; }
+}
+
+@media (max-width: 760px) {
+  /* hearts/sparkles lighter on small screens handled by JS count; keep auroras calmer */
+  .aurora { filter: blur(50px); opacity: 0.4; }
+}

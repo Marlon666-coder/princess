@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { friendlyError } from '../lib/supabase'
 import { Button, Input } from '../components/UI'
 import { SakuraBackground } from '../components/SakuraBackground'
+import { Ambiance } from '../components/Ambiance'
 import { Magnetic } from '../components/motion'
 
 export function WelcomePage() {
@@ -21,6 +22,7 @@ export function WelcomePage() {
   }
 
   return <main className="welcome-page">
+    <Ambiance variant="auth" />
     <SakuraBackground dense />
     <AnimatePresence mode="wait">
       {!entered ? <motion.section key="intro" className="welcome-content" initial={{ opacity: 0, scale: .96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.06 }}>
