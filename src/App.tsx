@@ -5,6 +5,7 @@ import { isSupabaseConfigured } from './lib/supabase'
 import { Loading } from './components/UI'
 import { ConfigRequired } from './components/ConfigRequired'
 import { AppShell } from './components/AppShell'
+import { GrainOverlay, HeartCursor, LoadingScreen } from './components/motion'
 import { WelcomePage } from './pages/WelcomePage'
 import { HomePage } from './pages/HomePage'
 import { DatesPage } from './pages/DatesPage'
@@ -34,5 +35,15 @@ function Application() {
 }
 
 export default function App() {
-  return <AuthProvider><BrowserRouter><Application /><Toaster richColors position="top-center" /></BrowserRouter></AuthProvider>
+  return (
+    <AuthProvider>
+      <LoadingScreen />
+      <GrainOverlay />
+      <HeartCursor />
+      <BrowserRouter>
+        <Application />
+        <Toaster richColors position="top-center" />
+      </BrowserRouter>
+    </AuthProvider>
+  )
 }

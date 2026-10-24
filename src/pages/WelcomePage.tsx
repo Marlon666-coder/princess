@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { friendlyError } from '../lib/supabase'
 import { Button, Input } from '../components/UI'
 import { SakuraBackground } from '../components/SakuraBackground'
+import { Magnetic } from '../components/motion'
 
 export function WelcomePage() {
   const [entered, setEntered] = useState(false)
@@ -25,7 +26,7 @@ export function WelcomePage() {
       {!entered ? <motion.section key="intro" className="welcome-content" initial={{ opacity: 0, scale: .96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.06 }}>
         <div className="heart-orbit"><Heart fill="currentColor" /></div><p className="eyebrow">Our Little World</p>
         <h1>Halo Sayangku<br /><em>Nasywa</em> ❤️</h1><p>Welcome to our little world.</p>
-        <Button onClick={() => setEntered(true)}>Masuk ke Dunia Kita <Heart size={18} fill="currentColor" /></Button>
+        <Magnetic strength={0.3}><Button onClick={() => setEntered(true)}>Masuk ke Dunia Kita <Heart size={18} fill="currentColor" /></Button></Magnetic>
       </motion.section> : <motion.section key="login" className="auth-card" initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }}>
         <div className="brand-mark"><LockKeyhole /></div><p className="eyebrow">Private, just for us</p><h1>Selamat datang kembali ❤️</h1>
         <p>Masuk dengan akun private kita untuk membuka semua rencana dan kenangan.</p>
