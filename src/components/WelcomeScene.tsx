@@ -57,9 +57,9 @@ function useBarkTextures(night: boolean) {
       return tex
     }
 
-    const base = night ? '#4a2f3a' : '#6b4a4f'
-    const dark = night ? '#2f1d26' : '#4a3236'
-    const light = night ? '#6a4652' : '#8a6168'
+    const base = night ? '#3a2630' : '#5c4047'
+    const dark = night ? '#231118' : '#3c2a2e'
+    const light = night ? '#54343f' : '#7a545c'
 
     const color = make((ctx) => {
       ctx.fillStyle = base
@@ -145,10 +145,12 @@ function Limb({
     for (let i = 0; i <= steps; i++) {
       const t = i / steps
       const r = MathUtils.lerp(radiusStart, radiusEnd, t) / radiusStart
+      // Use getPoint (uniform param) to match TubeGeometry's own sampling so the
+      // ring recentering is exact — getPointAt (arc-length) warps the mesh.
+      const center = curve.getPoint(Math.min(t, 1))
       for (let j = 0; j <= radialSegments; j++) {
         const idx = i * (radialSegments + 1) + j
         if (idx >= pos.count) continue
-        const center = curve.getPointAt(Math.min(t, 1))
         tmp.fromBufferAttribute(pos, idx)
         tmp.sub(center).multiplyScalar(r).add(center)
         pos.setXYZ(idx, tmp.x, tmp.y, tmp.z)
@@ -164,11 +166,11 @@ function Limb({
       <meshStandardMaterial
         map={colorMap}
         bumpMap={bumpMap}
-        bumpScale={0.12}
+        bumpScale={0.15}
         roughnessMap={bumpMap}
-        roughness={0.95}
+        roughness={1}
         metalness={0}
-        envMapIntensity={0.6}
+        envMapIntensity={0.25}
       />
     </mesh>
   )
@@ -370,30 +372,33 @@ function Petals({ count, night }: { count: number; night: boolean }) {
 function LightShafts({ night }: { night: boolean }) {
   const shafts = useMemo(
     () =>
-      Array.from({ length: 6 }, (_, i) => {
-        const a = (i / 6) * Math.PI * 2
-        return { x: Math.cos(a) * 2.2, z: Math.sin(a) * 2.2, rot: (Math.random() - 0.5) * 0.3, h: 16 + Math.random() * 4 }
+      Array.from({ length: 5 }, (_, i) => {
+        const a = (i / 5) * Math.PI * 2 + 0.4
+        return { x: Math.cos(a) * 4, z: Math.sin(a) * 4, rot: (Math.random() - 0.5) * 0.18, h: 10 + Math.random() * 3 }
       }),
     [],
   )
+  const baseOpacity = night ? 0.1 : 0.06
   const group = useRef<Group>(null)
   useFrame(({ clock }) => {
     if (reduced() || !group.current) return
     const t = clock.elapsedTime
     group.current.children.forEach((c, i) => {
       const m = c as unknown as { material?: { opacity?: number } }
-      if (m.material) m.material.opacity = (night ? 0.14 : 0.08) + Math.sin(t * 0.5 + i) * 0.03
+      if (m.material) m.material.opacity = baseOpacity + Math.sin(t * 0.5 + i) * 0.02
     })
   })
+  // Shafts live high up near the canopy only, angled outward, so they read as
+  // light breaking through the blossoms — never over the trunk.
   return (
-    <group ref={group} position={[0, 10, 0]}>
+    <group ref={group} position={[0, 17, 0]}>
       {shafts.map((s, i) => (
         <mesh key={i} position={[s.x, 0, s.z]} rotation={[0, 0, s.rot]}>
-          <coneGeometry args={[2.4, s.h, 16, 1, true]} />
+          <coneGeometry args={[1.6, s.h, 14, 1, true]} />
           <meshBasicMaterial
             color={night ? '#ffc6e2' : '#fff4da'}
             transparent
-            opacity={night ? 0.14 : 0.08}
+            opacity={baseOpacity}
             depthWrite={false}
           />
         </mesh>
@@ -492,7 +497,7 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
       }}
     >
       <color attach="background" args={[sky]} />
-      <fog attach="fog" args={[sky, 24, 58]} />
+      <fog attach="fog" args={[sky, 34, 75]} />
 
       {/* Percentage-closer soft shadows for realistic contact softening */}
       {!mobile && <SoftShadows size={28} samples={12} focus={0.9} />}
