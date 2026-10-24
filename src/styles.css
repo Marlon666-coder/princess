@@ -231,13 +231,13 @@ html { scroll-behavior: smooth; }
   bottom: -5%;
   color: var(--rose);
   display: block;
-  line-height: 1;
-  font-size: 1rem;
+  line-height: 0;
   animation-name: floatUp;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
   will-change: transform, opacity;
 }
+.floating-hearts span svg { display: block; width: 100%; height: 100%; }
 @keyframes floatUp {
   0% { transform: translateY(0) rotate(0deg); opacity: 0; }
   10% { opacity: 1; }
