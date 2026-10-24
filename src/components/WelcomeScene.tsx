@@ -414,26 +414,29 @@ function LightShafts({ night }: { night: boolean }) {
 function GrassTufts({ night }: { night: boolean }) {
   const blades = useMemo(
     () =>
-      Array.from({ length: 140 }, () => {
+      Array.from({ length: 520 }, () => {
         const a = Math.random() * Math.PI * 2
-        const r = 4 + Math.random() * 20
+        // spread far and wide to fill the meadow toward the mountains
+        const r = 2 + Math.pow(Math.random(), 0.6) * 55
         return {
-          pos: [Math.cos(a) * r, -2.55, Math.sin(a) * r] as Vector3Tuple,
+          pos: [Math.cos(a) * r, -2.55, Math.sin(a) * r - 6] as Vector3Tuple,
           rot: Math.random() * Math.PI,
-          h: 0.4 + Math.random() * 0.7,
+          h: 0.4 + Math.random() * 0.9,
           lean: (Math.random() - 0.5) * 0.3,
+          far: r,
         }
       }),
     [],
   )
   const g1 = night ? '#2e6b48' : '#6cae5a'
   const g2 = night ? '#244f38' : '#4f9145'
+  const g3 = night ? '#366f4e' : '#80c767'
   return (
     <group>
       {blades.map((b, i) => (
         <mesh key={i} position={[b.pos[0], b.pos[1] + b.h / 2, b.pos[2]]} rotation={[b.lean, b.rot, b.lean]}>
-          <coneGeometry args={[0.12, b.h, 4]} />
-          <meshStandardMaterial color={i % 2 ? g1 : g2} roughness={0.9} flatShading />
+          <coneGeometry args={[0.1 + (b.far > 25 ? 0.12 : 0), b.h, 4]} />
+          <meshStandardMaterial color={[g1, g2, g3][i % 3]} roughness={0.95} flatShading />
         </mesh>
       ))}
     </group>
@@ -496,7 +499,7 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
         alpha: false,
         powerPreference: 'high-performance',
         toneMapping: ACESFilmicToneMapping,
-        toneMappingExposure: night ? 1.05 : 1.15,
+        toneMappingExposure: night ? 1.0 : 0.95,
       }}
     >
       {/* Sky (in Environment3D) paints the background; light warm haze only in
@@ -540,13 +543,18 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
 
       <CameraRig zoom={zoom} enableParallax={!mobile} />
 
-      {/* ground + soft contact shadow */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.6, 0]} receiveShadow>
-        <circleGeometry args={[40, 64]} />
-        <meshStandardMaterial color={night ? '#241a38' : '#cfe8c2'} roughness={0.95} metalness={0} envMapIntensity={0.3} />
+      {/* vast grass meadow stretching to the mountains */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.6, -20]} receiveShadow>
+        <planeGeometry args={[400, 260]} />
+        <meshStandardMaterial color={night ? '#1e3328' : '#7bbf5e'} roughness={1} metalness={0} envMapIntensity={0.2} />
+      </mesh>
+      {/* a slightly darker nearer band so the foreground meadow reads with depth */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.58, 12]} receiveShadow>
+        <circleGeometry args={[34, 64]} />
+        <meshStandardMaterial color={night ? '#24402f' : '#6cb152'} roughness={1} metalness={0} envMapIntensity={0.2} />
       </mesh>
       {!mobile && (
-        <ContactShadows position={[0, -2.55, 0]} opacity={night ? 0.5 : 0.35} scale={30} blur={2.4} far={8} resolution={1024} color={night ? '#000010' : '#8a5a6a'} />
+        <ContactShadows position={[0, -2.55, 0]} opacity={night ? 0.5 : 0.4} scale={30} blur={2.4} far={8} resolution={1024} color={night ? '#000010' : '#2f5a32'} />
       )}
 
       {!mobile && <GrassTufts night={night} />}
@@ -565,11 +573,11 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
           {/* ambient occlusion — deep, soft contact shadows in crevices (the
               single biggest contributor to a "rendered game" look) */}
           <N8AO aoRadius={3} distanceFalloff={1} intensity={night ? 2.4 : 1.8} quality="high" halfRes color={night ? '#0a0414' : '#5a3348'} />
-          <Bloom intensity={night ? 1.1 : 0.7} luminanceThreshold={night ? 0.3 : 0.7} luminanceSmoothing={0.9} mipmapBlur radius={0.7} />
+          <Bloom intensity={night ? 1.0 : 0.5} luminanceThreshold={night ? 0.35 : 0.82} luminanceSmoothing={0.9} mipmapBlur radius={0.65} />
           <DepthOfField focusDistance={zoom ? 0.008 : 0.02} focalLength={zoom ? 0.05 : 0.03} bokehScale={3} />
           {/* filmic color grading */}
           <HueSaturation saturation={night ? 0.08 : 0.14} hue={0} />
-          <BrightnessContrast brightness={0} contrast={0.08} />
+          <BrightnessContrast brightness={night ? 0 : -0.06} contrast={0.12} />
           <Vignette eskil={false} offset={0.22} darkness={night ? 0.72 : 0.42} />
           {/* ACES tonemap pass + SMAA anti-aliasing (crisp edges) */}
           <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
