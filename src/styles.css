@@ -24,6 +24,14 @@
    Premium 3D / motion experience — added layer
    ============================================================ */
 
+/* Safety underlay: the WebGL canvas composites over an opaque target once
+   post-processing is active, so guarantee a pink base behind it — never black. */
+.sakura-canvas {
+  background: radial-gradient(circle at 20% 15%, #fff7fa, transparent 45%),
+    radial-gradient(circle at 80% 85%, #efe5f7, transparent 45%),
+    linear-gradient(135deg, #fff7fa, #fddde7 48%, #f9edf9);
+}
+
 /* Custom heart cursor (desktop, fine pointers only) */
 @media (pointer: fine) {
   .heart-cursor {

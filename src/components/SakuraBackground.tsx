@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Float } from '@react-three/drei'
-import { EffectComposer, Bloom, DepthOfField, Vignette } from '@react-three/postprocessing'
+import { EffectComposer, Bloom, DepthOfField } from '@react-three/postprocessing'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Shape, type Group } from 'three'
 
@@ -107,6 +107,48 @@ function SakuraBranches() {
         )
       })}
     </group>
+  )
+}
+
+/**
+ * SceneBackdrop — a full-screen soft pink gradient rendered INSIDE the WebGL scene.
+ * This is essential: once an EffectComposer is active the canvas is no longer
+ * transparent, so without this the composer composites over opaque black. Drawing
+ * the romantic gradient in-scene lets bloom/DOF/vignette sit on top of pink.
+ */
+function SceneBackdrop() {
+  const { viewport } = useThree()
+  return (
+    <mesh position={[0, 0, -6]} scale={[viewport.width * 3, viewport.height * 3, 1]}>
+      <planeGeometry args={[1, 1, 1, 1]} />
+      <shaderMaterial
+        depthWrite={false}
+        uniforms={{
+          top: { value: [1.0, 0.956, 0.976] }, // #fff4f9
+          mid: { value: [0.992, 0.862, 0.905] }, // #fddde7
+          bottom: { value: [0.976, 0.929, 0.976] }, // #f9edf9
+        }}
+        vertexShader={`
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `}
+        fragmentShader={`
+          varying vec2 vUv;
+          uniform vec3 top;
+          uniform vec3 mid;
+          uniform vec3 bottom;
+          void main() {
+            vec3 color = vUv.y > 0.5
+              ? mix(mid, top, (vUv.y - 0.5) * 2.0)
+              : mix(bottom, mid, vUv.y * 2.0);
+            gl_FragColor = vec4(color, 1.0);
+          }
+        `}
+      />
+    </mesh>
   )
 }
 
@@ -217,20 +259,21 @@ export function SakuraBackground({ dense = false }: { dense?: boolean }) {
         frameloop={visible ? 'always' : 'never'}
         gl={{ alpha: true, antialias: !mobile }}
       >
-        <ambientLight intensity={1.4} />
-        <directionalLight position={[3, 5, 6]} intensity={1.3} color="#fff2f7" />
-        <pointLight position={[-4, -2, 4]} intensity={0.6} color="#ffd6e6" />
+        {/* In-scene pink gradient so post-processing composites over pink, not black. */}
+        <SceneBackdrop />
+        <ambientLight intensity={1.6} />
+        <directionalLight position={[3, 5, 6]} intensity={1.4} color="#fff2f7" />
+        <pointLight position={[-4, -2, 4]} intensity={0.7} color="#ffd6e6" />
         <ParallaxRig enabled={!mobile} />
         <Float speed={0.35} rotationIntensity={0.08} floatIntensity={0.1}>
           <SakuraBranches />
         </Float>
         <PetalField count={petalCount} />
-        {/* Post-processing is what makes it read as a "premium" render. */}
+        {/* Gentle bloom only — tuned to glow the petals without darkening the scene. */}
         {!mobile && (
           <EffectComposer>
-            <Bloom intensity={0.9} luminanceThreshold={0.25} luminanceSmoothing={0.85} mipmapBlur radius={0.7} />
-            <DepthOfField focusDistance={0.02} focalLength={0.08} bokehScale={2.4} />
-            <Vignette eskil={false} offset={0.2} darkness={0.55} />
+            <Bloom intensity={0.55} luminanceThreshold={0.6} luminanceSmoothing={0.9} mipmapBlur radius={0.6} />
+            <DepthOfField focusDistance={0.015} focalLength={0.06} bokehScale={1.8} />
           </EffectComposer>
         )}
       </Canvas>
