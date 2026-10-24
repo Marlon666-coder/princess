@@ -17,10 +17,14 @@ import { Environment3D } from './Environment3D'
 import { SeatedCouple } from './SeatedCouple'
 import {
   ACESFilmicToneMapping,
+  BufferGeometry,
   CanvasTexture,
   CatmullRomCurve3,
   Color,
+  DoubleSide,
+  Float32BufferAttribute,
   MathUtils,
+  MeshStandardMaterial,
   Object3D,
   PCFSoftShadowMap,
   RepeatWrapping,
@@ -420,8 +424,67 @@ const seeded = (index: number, salt: number) => {
   return value - Math.floor(value)
 }
 
+/** A flat, tapered, slightly curved grass blade (y: 0 -> 1). Vertex colours
+ * run dark at the root to bright at the tip for natural depth. */
+function makeBladeGeometry() {
+  const segments = 4
+  const positions: number[] = []
+  const colors: number[] = []
+  const indices: number[] = []
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments
+    const halfWidth = 0.05 * (1 - t) + 0.004
+    const curve = t * t * 0.12
+    positions.push(-halfWidth, t, curve, halfWidth, t, curve)
+    const shade = 0.42 + 0.58 * t
+    colors.push(shade, shade, shade, shade, shade, shade)
+  }
+  for (let i = 0; i < segments; i++) {
+    const a = i * 2
+    indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2)
+  }
+  const geometry = new BufferGeometry()
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('color', new Float32BufferAttribute(colors, 3))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
+}
+
 function GrassTufts({ night, count }: { night: boolean; count: number }) {
   const grass = useRef<InstancedMesh>(null)
+  const geometry = useMemo(() => makeBladeGeometry(), [])
+  const wind = useMemo(() => ({ value: 0 }), [])
+
+  // White base colour: three.js MULTIPLIES instanceColor by material.color, so
+  // any non-white base darkens every blade (that was the "black grass" bug).
+  const material = useMemo(() => {
+    const m = new MeshStandardMaterial({ color: '#ffffff', vertexColors: true, side: DoubleSide, roughness: 0.92 })
+    m.onBeforeCompile = (shader) => {
+      shader.uniforms.uTime = wind
+      shader.vertexShader = `uniform float uTime;\n${shader.vertexShader}`.replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+        #ifdef USE_INSTANCING
+          vec3 bladeRoot = instanceMatrix[3].xyz;
+        #else
+          vec3 bladeRoot = vec3(0.0);
+        #endif
+        // travelling gusts across the meadow; root stays planted, tip sways most
+        float gust = sin(uTime * 1.6 + bladeRoot.x * 0.35 + bladeRoot.z * 0.22) * 0.65
+                   + sin(uTime * 2.9 + bladeRoot.z * 0.9 + bladeRoot.x * 0.4) * 0.25;
+        float bend = position.y * position.y;
+        transformed.x += gust * bend * 0.24;
+        transformed.z += gust * bend * 0.14;`,
+      )
+    }
+    return m
+  }, [wind])
+
+  useFrame(({ clock }) => {
+    if (!reduced()) wind.value = clock.elapsedTime
+  })
+
   const blades = useMemo(
     () =>
       Array.from({ length: count }, (_, index) => {
@@ -430,10 +493,11 @@ function GrassTufts({ night, count }: { night: boolean; count: number }) {
         return {
           x: Math.cos(angle) * radius,
           z: Math.sin(angle) * radius - 4,
-          height: 0.28 + seeded(index, 3) * 0.62,
-          rotation: seeded(index, 4) * Math.PI,
-          lean: (seeded(index, 5) - 0.5) * 0.28,
-          tone: index % 3,
+          height: 0.35 + seeded(index, 3) * 0.5,
+          width: 0.8 + seeded(index, 6) * 0.6,
+          rotation: seeded(index, 4) * Math.PI * 2,
+          lean: (seeded(index, 5) - 0.5) * 0.35,
+          tone: index % 4,
         }
       }),
     [count],
@@ -442,28 +506,25 @@ function GrassTufts({ night, count }: { night: boolean; count: number }) {
   useLayoutEffect(() => {
     if (!grass.current) return
     const dummy = new Object3D()
-    const colors = night ? ['#315f42', '#3d7350', '#294e38'] : ['#579447', '#6aaa52', '#447e3c']
+    const palette = night
+      ? ['#4f8f63', '#5ea372', '#3f7a55', '#6bb07f']
+      : ['#6fb24f', '#84c75c', '#5a9e44', '#9bd46a']
+    const tint = new Color()
     blades.forEach((blade, index) => {
-      dummy.position.set(blade.x, -2.6 + blade.height / 2, blade.z)
-      dummy.rotation.set(blade.lean, blade.rotation, blade.lean * 0.45)
-      dummy.scale.set(0.85, blade.height, 0.85)
+      // root on the ground; the blade geometry grows upward from y=0
+      dummy.position.set(blade.x, -2.6, blade.z)
+      dummy.rotation.set(blade.lean, blade.rotation, blade.lean * 0.5)
+      dummy.scale.set(blade.width, blade.height, blade.width)
       dummy.updateMatrix()
       grass.current?.setMatrixAt(index, dummy.matrix)
-      grass.current?.setColorAt(index, new Color(colors[blade.tone]))
+      grass.current?.setColorAt(index, tint.set(palette[blade.tone]))
     })
     grass.current.instanceMatrix.needsUpdate = true
-    // setColorAt allocates instanceColor; flag it so the colours actually show
     if (grass.current.instanceColor) grass.current.instanceColor.needsUpdate = true
   }, [blades, night])
 
-  return (
-    <instancedMesh ref={grass} args={[undefined, undefined, count]} castShadow receiveShadow>
-      <coneGeometry args={[0.055, 1, 3]} />
-      {/* base color (no vertexColors) — instanceColor tints per blade, and this
-          guarantees a green fallback instead of black if colours lag a frame */}
-      <meshStandardMaterial color={night ? '#3d7350' : '#6aaa52'} roughness={0.96} />
-    </instancedMesh>
-  )
+  // receiveShadow only: thin self-shadowing blades caused dark "acne" patches
+  return <instancedMesh ref={grass} args={[geometry, material, count]} receiveShadow frustumCulled={false} />
 }
 
 /* ----------------------------------------------------------------
@@ -535,9 +596,9 @@ function FlowerField({ night, count }: { night: boolean; count: number }) {
       </instancedMesh>
       <instancedMesh ref={blossoms} args={[undefined, undefined, count]} castShadow>
         <icosahedronGeometry args={[0.13, 1]} />
-        {/* base color (no vertexColors) so blossoms are never black; instanceColor
-            tints each one pink/white/violet/etc. */}
-        <meshStandardMaterial color={night ? '#ff8fbd' : '#f06f9f'} roughness={0.7} emissive={night ? '#301328' : '#1a050b'} emissiveIntensity={night ? 0.32 : 0.08} />
+        {/* White base: instanceColor is multiplied by material.color, so a white
+            base lets each blossom show its true pink/white/violet/blue/yellow. */}
+        <meshStandardMaterial color="#ffffff" roughness={0.7} emissive={night ? '#2a1424' : '#000000'} emissiveIntensity={night ? 0.3 : 0} />
       </instancedMesh>
       <instancedMesh ref={centres} args={[undefined, undefined, count]}>
         <sphereGeometry args={[0.045, 6, 4]} />
