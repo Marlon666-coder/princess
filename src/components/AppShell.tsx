@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
 import { classNames } from '../lib/utils'
 import { SakuraBackground } from './SakuraBackground'
+import { Ambiance } from './Ambiance'
 
 const items = [
   { to: '/app', label: 'Home', icon: Home, end: true },
@@ -20,6 +21,7 @@ export function AppShell() {
   const { signOut, user } = useAuth()
   const location = useLocation()
   return <div className="app-shell">
+    <Ambiance variant="app" />
     <SakuraBackground />
     <aside className="sidebar">
       <div className="logo"><span><Heart fill="currentColor" /></span><div><strong>Our Little</strong><em>World</em></div></div>

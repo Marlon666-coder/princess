@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useRecords } from '../hooks/useRecords'
 import { EmptyState, Modal } from '../components/UI'
 import { formatDate } from '../lib/utils'
+import { PageHeader } from '../components/PageHeader'
 import type { CoupleDate } from '../types'
 
 const WEEKDAYS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
@@ -27,7 +28,7 @@ export function CalendarPage() {
   const dayDates = selectedDay ? (byDay[selectedDay] ?? []) : []
 
   return <main className="page">
-    <header className="page-header"><div><p className="eyebrow">Our shared timeline</p><h1>Kalender Kita 📅</h1><p>Semua rencana date kita dalam satu tempat.</p></div></header>
+    <PageHeader eyebrow="Our shared timeline" title="Kalender Kita 📅" subtitle="Semua rencana date kita dalam satu tempat." />
 
     {loading ? <div className="skeleton-list" /> : <section className="card calendar">
       <div className="calendar-heading">

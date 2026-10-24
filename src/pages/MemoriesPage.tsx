@@ -10,6 +10,7 @@ import { withSignedUrls } from '../lib/photos'
 import { deleteVideo, formatVideoDuration, uploadVideo, withVideoUrls } from '../lib/videos'
 import { friendlyError, supabase } from '../lib/supabase'
 import { formatDate } from '../lib/utils'
+import { PageHeader } from '../components/PageHeader'
 import type { Moment, Photo, Video } from '../types'
 
 export function MemoriesPage() {
@@ -84,7 +85,7 @@ export function MemoriesPage() {
   }
 
   return <main className="page">
-    <header className="page-header"><div><p className="eyebrow">Stories worth remembering</p><h1>Favorite Moments ❤️</h1><p>Karena hal kecil bersamamu layak untuk selalu diingat.</p></div>{tab === 'moments' ? <Button onClick={() => setOpen(true)}><Plus /> Add Memory</Button> : <Button onClick={() => setVideoOpen(true)}><Plus /> Add Video</Button>}</header>
+    <PageHeader eyebrow="Stories worth remembering" title={<>Favorite Moments <Heart className="inline-heart" fill="currentColor" /></>} subtitle="Karena hal kecil bersamamu layak untuk selalu diingat." actions={tab === 'moments' ? <Button onClick={() => setOpen(true)}><Plus /> Add Memory</Button> : <Button onClick={() => setVideoOpen(true)}><Plus /> Add Video</Button>} />
 
     <div className="segmented"><button className={tab === 'moments' ? 'active' : ''} onClick={() => setTab('moments')}>❤️ Moments</button><button className={tab === 'videos' ? 'active' : ''} onClick={() => setTab('videos')}>🎥 Video Moments</button></div>
 

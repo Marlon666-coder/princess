@@ -8,6 +8,7 @@ import { useRecords } from '../hooks/useRecords'
 import { deletePhoto, uploadPhoto, withSignedUrls } from '../lib/photos'
 import { friendlyError, supabase } from '../lib/supabase'
 import { formatDate } from '../lib/utils'
+import { PageHeader } from '../components/PageHeader'
 import type { Photo } from '../types'
 
 export function GalleryPage() {
@@ -58,7 +59,7 @@ export function GalleryPage() {
   }
 
   return <main className="page">
-    <header className="page-header"><div><p className="eyebrow">Saved forever</p><h1>Our Gallery 📸</h1><p>Potongan kecil dari cerita panjang kita.</p></div><Button onClick={() => setUploadOpen(true)}><Plus /> Upload Photo</Button></header>
+    <PageHeader eyebrow="Saved forever" title="Our Gallery 📸" subtitle="Potongan kecil dari cerita panjang kita." actions={<Button onClick={() => setUploadOpen(true)}><Plus /> Upload Photo</Button>} />
     <div className="segmented"><button className={!favoritesOnly ? 'active' : ''} onClick={() => setFavoritesOnly(false)}>All Photos</button><button className={favoritesOnly ? 'active' : ''} onClick={() => setFavoritesOnly(true)}>❤️ Our Favorites</button></div>
     {loading ? <div className="gallery-skeleton" /> : !visible.length ? <EmptyState icon="📷" title="Belum ada foto di sini ❤️" text="Ayo simpan kenangan pertama kita." /> : <section className="gallery-grid">{visible.map((photo, index) => <motion.button layout className={`gallery-item item-${index % 7}`} key={photo.id} onClick={() => setSelected(photo)}><img src={photo.signedUrl} alt={photo.caption || 'Kenangan kita'} loading="lazy" /><span className="gallery-overlay"><strong>{photo.caption || 'Our moment ❤️'}</strong><small>{photo.location}</small></span>{photo.is_favorite && <Heart className="photo-heart" fill="currentColor" />}</motion.button>)}</section>}
 
