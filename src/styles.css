@@ -143,3 +143,22 @@
   .app-shell::before,
   .loading-heart { animation: none !important; }
 }
+
+/* Inline heart in the welcome heading — crisp vector instead of a system emoji */
+.welcome-content h1 .title-heart {
+  display: inline-block;
+  width: clamp(2rem, 5vw, 3.6rem);
+  height: clamp(2rem, 5vw, 3.6rem);
+  vertical-align: baseline;
+  margin-left: 0.15em;
+  color: var(--rose);
+  filter: drop-shadow(0 6px 18px rgba(220, 102, 137, 0.4));
+  animation: heartPulse 2.4s ease-in-out infinite;
+}
+@keyframes heartPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-content h1 .title-heart { animation: none; }
+}

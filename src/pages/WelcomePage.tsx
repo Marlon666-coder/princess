@@ -25,7 +25,7 @@ export function WelcomePage() {
     <AnimatePresence mode="wait">
       {!entered ? <motion.section key="intro" className="welcome-content" initial={{ opacity: 0, scale: .96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.06 }}>
         <div className="heart-orbit"><Heart fill="currentColor" /></div><p className="eyebrow">Our Little World</p>
-        <h1>Halo Sayangku<br /><em>Nasywa</em> ❤️</h1><p>Welcome to our little world.</p>
+        <h1>Halo Sayangku<br /><em>Nasywa</em> <Heart className="title-heart" fill="currentColor" aria-label="love" /></h1><p>Welcome to our little world.</p>
         <Magnetic strength={0.3}><Button onClick={() => setEntered(true)}>Masuk ke Dunia Kita <Heart size={18} fill="currentColor" /></Button></Magnetic>
       </motion.section> : <motion.section key="login" className="auth-card" initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }}>
         <div className="brand-mark"><LockKeyhole /></div><p className="eyebrow">Private, just for us</p><h1>Selamat datang kembali ❤️</h1>
