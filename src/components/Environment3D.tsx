@@ -2,9 +2,13 @@ import { Sky, Clouds, Cloud, Stars } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import {
+  AdditiveBlending,
+  BackSide,
   BufferGeometry,
+  Color,
   Float32BufferAttribute,
   MeshBasicMaterial,
+  ShaderMaterial,
   Vector3,
   type Group,
   type Mesh,
@@ -131,9 +135,104 @@ function DriftingClouds({ night }: { night: boolean }) {
   )
 }
 
+/* ----------------------------------------------------------------
+   Night sky dome — a big inward-facing sphere with a vertical gradient
+   (deep indigo at the horizon -> near-black at the zenith). Replaces the
+   bright physical Sky at night so the sky is actually dark.
+----------------------------------------------------------------- */
+function NightSkyDome() {
+  const mat = useMemo(() => {
+    const m = new ShaderMaterial({
+      side: BackSide,
+      depthWrite: false,
+      fog: false,
+      uniforms: {
+        top: { value: new Color('#0a0618') },
+        mid: { value: new Color('#201547') },
+        bottom: { value: new Color('#3a2168') },
+      },
+      vertexShader: `
+        varying vec3 vPos;
+        void main() {
+          vPos = position;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vPos;
+        uniform vec3 top; uniform vec3 mid; uniform vec3 bottom;
+        void main() {
+          float h = clamp((normalize(vPos).y * 0.5 + 0.5), 0.0, 1.0);
+          vec3 c = h > 0.5 ? mix(mid, top, (h - 0.5) * 2.0) : mix(bottom, mid, h * 2.0);
+          gl_FragColor = vec4(c, 1.0);
+        }
+      `,
+    })
+    return m
+  }, [])
+  return (
+    <mesh scale={[-1, 1, 1]}>
+      <sphereGeometry args={[500, 32, 16]} />
+      <primitive object={mat} attach="material" />
+    </mesh>
+  )
+}
+
+/* ----------------------------------------------------------------
+   Aurora borealis — soft vertical curtains of green/teal/violet light
+   waving slowly high in the night sky. Additive, cheap, dreamy.
+----------------------------------------------------------------- */
+function Aurora() {
+  const mat = useRef<ShaderMaterial>(null)
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      cA: { value: new Color('#5effc4') },
+      cB: { value: new Color('#7aa8ff') },
+      cC: { value: new Color('#c86bff') },
+    }),
+    [],
+  )
+  useFrame(({ clock }) => {
+    if (!reduced() && mat.current) mat.current.uniforms.uTime.value = clock.elapsedTime
+  })
+  return (
+    <mesh position={[0, 40, -110]} rotation={[0, 0, 0]}>
+      <planeGeometry args={[220, 70, 1, 1]} />
+      <shaderMaterial
+        ref={mat}
+        transparent
+        depthWrite={false}
+        blending={AdditiveBlending}
+        fog={false}
+        uniforms={uniforms}
+        vertexShader={`
+          varying vec2 vUv;
+          void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+        `}
+        fragmentShader={`
+          varying vec2 vUv;
+          uniform float uTime; uniform vec3 cA; uniform vec3 cB; uniform vec3 cC;
+          void main() {
+            // waving vertical curtains
+            float x = vUv.x;
+            float wave = sin(x * 9.0 + uTime * 0.6) * 0.5 + sin(x * 20.0 - uTime * 0.9) * 0.25;
+            float band = smoothstep(0.0, 0.5, vUv.y) * (1.0 - smoothstep(0.5, 1.0, vUv.y));
+            float curtain = smoothstep(0.35, 0.0, abs(fract(x * 3.0 + wave * 0.08) - 0.5));
+            float a = band * curtain;
+            vec3 col = mix(cA, cB, x) ;
+            col = mix(col, cC, smoothstep(0.6, 1.0, vUv.y));
+            gl_FragColor = vec4(col, a * 0.5);
+          }
+        `}
+      />
+    </mesh>
+  )
+}
+
 /**
  * Environment3D — sky, sun/moon, clouds, layered mountains, and (at night)
- * a starfield. Everything is procedural; nothing is fetched.
+ * a starfield + aurora. Everything is procedural; nothing is fetched.
  */
 export function Environment3D({ night, mobile }: { night: boolean; mobile: boolean }) {
   // Sun sitting low on the horizon (left) for a warm golden-hour sunset.
@@ -141,27 +240,37 @@ export function Environment3D({ night, mobile }: { night: boolean; mobile: boole
 
   return (
     <group>
-      {/* Atmospheric sky with physical scattering, tuned for a sunset: sun near
-          the horizon + high turbidity/rayleigh gives the orange-pink gradient. */}
-      <Sky
-        distance={450000}
-        sunPosition={[sunPos.x, sunPos.y, sunPos.z]}
-        turbidity={night ? 12 : 10}
-        rayleigh={night ? 0.4 : 3.2}
-        mieCoefficient={night ? 0.008 : 0.025}
-        mieDirectionalG={night ? 0.8 : 0.93}
-      />
+      {night ? (
+        <>
+          {/* Dark gradient night sky (replaces the bright physical Sky) */}
+          <NightSkyDome />
+          {/* a sky full of stars */}
+          <Stars radius={200} depth={80} count={mobile ? 3500 : 9000} factor={5} saturation={0} fade speed={0.5} />
+          {/* aurora curtains high in the sky */}
+          {!reduced() && <Aurora />}
+        </>
+      ) : (
+        /* Atmospheric sunset sky: low sun + high turbidity/rayleigh gives the
+           orange-pink gradient. */
+        <Sky
+          distance={450000}
+          sunPosition={[sunPos.x, sunPos.y, sunPos.z]}
+          turbidity={10}
+          rayleigh={3.2}
+          mieCoefficient={0.025}
+          mieDirectionalG={0.93}
+        />
+      )}
 
-      {night && <Stars radius={120} depth={60} count={mobile ? 1200 : 3500} factor={4} saturation={0} fade speed={0.6} />}
-
-      <Sun night={night} position={[sunPos.x, sunPos.y, sunPos.z]} />
+      {/* sun by day, glowing moon by night */}
+      <Sun night={night} position={night ? [34, 30, -80] : [sunPos.x, sunPos.y, sunPos.z]} />
 
       {!mobile && <DriftingClouds night={night} />}
 
-      {/* Mountain ranges — far = hazy sunset lilac, near = dusky purple */}
-      <MountainRange z={-95} baseY={-3} height={30} seed={1.2} color={night ? '#2b2440' : '#e3a68f'} />
-      <MountainRange z={-78} baseY={-3} height={24} seed={3.7} color={night ? '#241d38' : '#c98aa0'} />
-      <MountainRange z={-62} baseY={-3} height={18} seed={6.1} color={night ? '#1d1730' : '#9e6a95'} />
+      {/* Mountain ranges — far = hazy, near = darker */}
+      <MountainRange z={-95} baseY={-3} height={30} seed={1.2} color={night ? '#2b2448' : '#e3a68f'} />
+      <MountainRange z={-78} baseY={-3} height={24} seed={3.7} color={night ? '#221c3e' : '#c98aa0'} />
+      <MountainRange z={-62} baseY={-3} height={18} seed={6.1} color={night ? '#191432' : '#9e6a95'} />
     </group>
   )
 }
