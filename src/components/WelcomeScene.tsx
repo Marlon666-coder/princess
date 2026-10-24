@@ -12,7 +12,8 @@ import {
   SMAA,
 } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
-import { useMemo, useRef, useState } from 'react'
+import { Suspense, useMemo, useRef, useState } from 'react'
+import { CoupleCharacters } from './CoupleCharacters'
 import {
   ACESFilmicToneMapping,
   CanvasTexture,
@@ -318,45 +319,6 @@ function Yggdrasil({ night, quality }: { night: boolean; quality: 'high' | 'low'
 }
 
 /* ----------------------------------------------------------------
-   Blocky (original voxel) characters — small, beneath the giant tree
------------------------------------------------------------------ */
-type Palette = { skin: string; hair: string; shirt: string; pants: string; shoes: string }
-
-function BlockyCharacter({ position, facing = 1, palette }: { position: Vector3Tuple; facing?: 1 | -1; palette: Palette }) {
-  const inner = useRef<Group>(null)
-  useFrame(({ clock }) => {
-    if (reduced() || !inner.current) return
-    inner.current.position.y = Math.sin(clock.elapsedTime * 1.4 + position[0]) * 0.025
-  })
-  const u = 0.3
-  const mat = (color: string, rough = 0.85) => <meshStandardMaterial color={color} roughness={rough} />
-  return (
-    <group position={position} scale={0.85}>
-      <group ref={inner}>
-        <mesh position={[0, u * 5.1, 0]} castShadow><boxGeometry args={[u * 2, u * 2, u * 2]} />{mat(palette.skin)}</mesh>
-        <mesh position={[0, u * 6.05, 0]}><boxGeometry args={[u * 2.15, u * 0.9, u * 2.15]} />{mat(palette.hair, 0.9)}</mesh>
-        <mesh position={[0, u * 5.2, -u * 0.95]}><boxGeometry args={[u * 2.15, u * 2, u * 0.3]} />{mat(palette.hair, 0.9)}</mesh>
-        <mesh position={[facing * u * 0.45, u * 5.1, u * 1.01]}><boxGeometry args={[u * 0.3, u * 0.3, u * 0.05]} /><meshStandardMaterial color="#3a2330" /></mesh>
-        <mesh position={[facing * -u * 0.45, u * 5.1, u * 1.01]}><boxGeometry args={[u * 0.3, u * 0.3, u * 0.05]} /><meshStandardMaterial color="#3a2330" /></mesh>
-        <mesh position={[0, u * 4.6, u * 1.01]}><boxGeometry args={[u * 0.7, u * 0.14, u * 0.05]} /><meshStandardMaterial color="#d8738f" emissive="#d8738f" emissiveIntensity={0.3} /></mesh>
-        <mesh position={[0, u * 3.2, 0]} castShadow><boxGeometry args={[u * 2, u * 3, u]} />{mat(palette.shirt, 0.8)}</mesh>
-        {/* outer arm */}
-        <mesh position={[facing * -u * 1.5, u * 3, 0]} castShadow><boxGeometry args={[u, u * 3, u]} />{mat(palette.shirt, 0.8)}</mesh>
-        {/* inner arm raised to hold hands */}
-        <group position={[facing * u * 1.5, u * 4.3, 0]} rotation={[0, 0, facing * -0.9]}>
-          <mesh position={[facing * u * 1.1, -u * 0.4, 0]} castShadow><boxGeometry args={[u * 3, u, u]} />{mat(palette.shirt, 0.8)}</mesh>
-          <mesh position={[facing * u * 2.7, -u * 0.4, 0]}><boxGeometry args={[u * 0.8, u, u]} />{mat(palette.skin)}</mesh>
-        </group>
-        <mesh position={[facing * -u * 0.5, u * 0.9, 0]} castShadow><boxGeometry args={[u * 0.95, u * 3, u]} />{mat(palette.pants)}</mesh>
-        <mesh position={[facing * u * 0.5, u * 0.9, 0]} castShadow><boxGeometry args={[u * 0.95, u * 3, u]} />{mat(palette.pants)}</mesh>
-        <mesh position={[facing * -u * 0.5, -u * 0.75, u * 0.1]}><boxGeometry args={[u, u * 0.7, u * 1.3]} />{mat(palette.shoes, 0.7)}</mesh>
-        <mesh position={[facing * u * 0.5, -u * 0.75, u * 0.1]}><boxGeometry args={[u, u * 0.7, u * 1.3]} />{mat(palette.shoes, 0.7)}</mesh>
-      </group>
-    </group>
-  )
-}
-
-/* ----------------------------------------------------------------
    Falling petals
 ----------------------------------------------------------------- */
 function makePetalSeeds(count: number) {
@@ -440,9 +402,6 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
   const calm = reduced()
   const quality: 'high' | 'low' = mobile ? 'low' : 'high'
 
-  const boyPalette: Palette = { skin: '#f3c6a5', hair: '#3a2a22', shirt: night ? '#6c8cff' : '#5b8def', pants: '#39507a', shoes: '#2d2d33' }
-  const girlPalette: Palette = { skin: '#f6cfb4', hair: '#4a2d33', shirt: night ? '#ff8fb4' : '#ff7fae', pants: '#c65b86', shoes: '#8a3d59' }
-
   const sky = night ? '#160d28' : '#ffe9f2'
 
   return (
@@ -506,11 +465,10 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
 
       <Yggdrasil night={night} quality={quality} />
 
-      {/* couple holding hands at the base, turned slightly toward each other */}
-      <group position={[0, 0, 2.6]}>
-        <BlockyCharacter position={[-0.8, -2.6, 0]} facing={1} palette={boyPalette} />
-        <BlockyCharacter position={[0.8, -2.6, 0]} facing={-1} palette={girlPalette} />
-      </group>
+      {/* rigged, smoothly-animated couple at the base (loaded async) */}
+      <Suspense fallback={null}>
+        <CoupleCharacters position={[0, -2.6, 2.6]} />
+      </Suspense>
 
       <Petals count={mobile ? 22 : 55} night={night} />
       {!calm && <Sparkles count={mobile ? 30 : 80} scale={[22, 24, 14]} position={[0, 10, 0]} size={night ? 4 : 2.5} speed={0.3} color={night ? '#ffd0e6' : '#ffffff'} opacity={night ? 0.9 : 0.6} />}
