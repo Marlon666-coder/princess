@@ -12,20 +12,23 @@ import {
   SMAA,
 } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
-import { useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Environment3D } from './Environment3D'
+import { SeatedCouple } from './SeatedCouple'
 import {
   ACESFilmicToneMapping,
   CanvasTexture,
   CatmullRomCurve3,
   Color,
   MathUtils,
+  Object3D,
   PCFSoftShadowMap,
   RepeatWrapping,
   SRGBColorSpace,
   TubeGeometry,
   Vector3,
   type Group,
+  type InstancedMesh,
   type Vector3Tuple,
 } from 'three'
 import { useTheme } from '../context/ThemeContext'
@@ -409,44 +412,161 @@ function LightShafts({ night }: { night: boolean }) {
 }
 
 /* ----------------------------------------------------------------
-   Small grass tufts scattered on the ground for lushness
+   Short instanced meadow grass. Hundreds of blades render in one draw call,
+   leaving a clear seating area around the characters.
 ----------------------------------------------------------------- */
+const seeded = (index: number, salt: number) => {
+  const value = Math.sin(index * 12.9898 + salt * 78.233) * 43758.5453
+  return value - Math.floor(value)
+}
+
 function GrassTufts({ night, count }: { night: boolean; count: number }) {
+  const grass = useRef<InstancedMesh>(null)
   const blades = useMemo(
     () =>
-      Array.from({ length: count }, () => {
-        const a = Math.random() * Math.PI * 2
-        // spread far and wide to fill the meadow toward the mountains
-        const r = 1.5 + Math.pow(Math.random(), 0.55) * 60
+      Array.from({ length: count }, (_, index) => {
+        const angle = seeded(index, 1) * Math.PI * 2
+        const radius = 3.3 + Math.pow(seeded(index, 2), 0.6) * 58
         return {
-          pos: [Math.cos(a) * r, -2.6, Math.sin(a) * r - 6] as Vector3Tuple,
-          rot: Math.random() * Math.PI,
-          // tall grass: much taller, varied
-          h: 1.1 + Math.random() * 2.2,
-          lean: (Math.random() - 0.5) * 0.5,
-          far: r,
+          x: Math.cos(angle) * radius,
+          z: Math.sin(angle) * radius - 4,
+          height: 0.28 + seeded(index, 3) * 0.62,
+          rotation: seeded(index, 4) * Math.PI,
+          lean: (seeded(index, 5) - 0.5) * 0.28,
+          tone: index % 3,
         }
       }),
     [count],
   )
-  const g1 = night ? '#2e6b48' : '#5ba048'
-  const g2 = night ? '#244f38' : '#478539'
-  const g3 = night ? '#366f4e' : '#74c25a'
-  const wind = useRef<Group>(null)
-  useFrame(({ clock }) => {
-    if (reduced() || !wind.current) return
-    wind.current.rotation.z = Math.sin(clock.elapsedTime * 0.8) * 0.04
-  })
+
+  useLayoutEffect(() => {
+    if (!grass.current) return
+    const dummy = new Object3D()
+    const colors = night ? ['#315f42', '#3d7350', '#294e38'] : ['#579447', '#6aaa52', '#447e3c']
+    blades.forEach((blade, index) => {
+      dummy.position.set(blade.x, -2.6 + blade.height / 2, blade.z)
+      dummy.rotation.set(blade.lean, blade.rotation, blade.lean * 0.45)
+      dummy.scale.set(0.85, blade.height, 0.85)
+      dummy.updateMatrix()
+      grass.current?.setMatrixAt(index, dummy.matrix)
+      grass.current?.setColorAt(index, new Color(colors[blade.tone]))
+    })
+    grass.current.instanceMatrix.needsUpdate = true
+    if (grass.current.instanceColor) grass.current.instanceColor.needsUpdate = true
+  }, [blades, night])
+
   return (
-    <group ref={wind}>
-      {blades.map((b, i) => (
-        <mesh key={i} position={[b.pos[0], b.pos[1] + b.h / 2, b.pos[2]]} rotation={[b.lean, b.rot, b.lean]}>
-          {/* thin, tall blade */}
-          <coneGeometry args={[0.07, b.h, 3]} />
-          <meshStandardMaterial color={[g1, g2, g3][i % 3]} roughness={0.95} flatShading />
-        </mesh>
-      ))}
+    <instancedMesh ref={grass} args={[undefined, undefined, count]} castShadow receiveShadow>
+      <coneGeometry args={[0.055, 1, 3]} />
+      <meshStandardMaterial vertexColors roughness={0.96} />
+    </instancedMesh>
+  )
+}
+
+/* ----------------------------------------------------------------
+   A flower field in three instanced draw calls: stems, coloured blossoms and
+   golden centres. The clearing around the seated couple stays unobstructed.
+----------------------------------------------------------------- */
+function FlowerField({ night, count }: { night: boolean; count: number }) {
+  const stems = useRef<InstancedMesh>(null)
+  const blossoms = useRef<InstancedMesh>(null)
+  const centres = useRef<InstancedMesh>(null)
+  const flowers = useMemo(
+    () =>
+      Array.from({ length: count }, (_, index) => {
+        const angle = seeded(index, 11) * Math.PI * 2
+        const radius = 3.5 + Math.pow(seeded(index, 12), 0.62) * 42
+        let x = Math.cos(angle) * radius
+        const z = Math.sin(angle) * radius - 3
+        // Keep the couple and visible roots clear of intersecting flowers.
+        if (Math.abs(x) < 2.4 && z > 0.2 && z < 5.2) x += x < 0 ? -2.8 : 2.8
+        return {
+          x,
+          z,
+          height: 0.32 + seeded(index, 13) * 0.55,
+          scale: 0.75 + seeded(index, 14) * 0.75,
+          tone: index % 5,
+        }
+      }),
+    [count],
+  )
+
+  useLayoutEffect(() => {
+    if (!stems.current || !blossoms.current || !centres.current) return
+    const dummy = new Object3D()
+    const palette = night
+      ? ['#ff8fbd', '#d8b2ff', '#fff0f7', '#89b8ff', '#ffd083']
+      : ['#f06f9f', '#ffb1cc', '#fff4f7', '#b99be8', '#f5c45f']
+
+    flowers.forEach((flower, index) => {
+      dummy.position.set(flower.x, -2.6 + flower.height / 2, flower.z)
+      dummy.rotation.set(0, seeded(index, 15) * Math.PI, 0)
+      dummy.scale.set(1, flower.height, 1)
+      dummy.updateMatrix()
+      stems.current?.setMatrixAt(index, dummy.matrix)
+
+      dummy.position.set(flower.x, -2.6 + flower.height, flower.z)
+      dummy.rotation.set(0, seeded(index, 16) * Math.PI, 0)
+      dummy.scale.set(flower.scale, flower.scale * 0.58, flower.scale)
+      dummy.updateMatrix()
+      blossoms.current?.setMatrixAt(index, dummy.matrix)
+      blossoms.current?.setColorAt(index, new Color(palette[flower.tone]))
+
+      dummy.position.set(flower.x, -2.6 + flower.height + 0.015, flower.z + 0.07)
+      dummy.scale.setScalar(0.72 * flower.scale)
+      dummy.updateMatrix()
+      centres.current?.setMatrixAt(index, dummy.matrix)
+    })
+
+    ;[stems.current, blossoms.current, centres.current].forEach((mesh) => {
+      mesh.instanceMatrix.needsUpdate = true
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+    })
+  }, [flowers, night])
+
+  return (
+    <group>
+      <instancedMesh ref={stems} args={[undefined, undefined, count]}>
+        <cylinderGeometry args={[0.018, 0.026, 1, 5]} />
+        <meshStandardMaterial color={night ? '#39704a' : '#4b923f'} roughness={0.95} />
+      </instancedMesh>
+      <instancedMesh ref={blossoms} args={[undefined, undefined, count]} castShadow>
+        <icosahedronGeometry args={[0.13, 1]} />
+        <meshStandardMaterial vertexColors roughness={0.7} emissive={night ? '#301328' : '#1a050b'} emissiveIntensity={night ? 0.32 : 0.08} />
+      </instancedMesh>
+      <instancedMesh ref={centres} args={[undefined, undefined, count]}>
+        <sphereGeometry args={[0.045, 6, 4]} />
+        <meshStandardMaterial color="#ffd267" emissive="#ffbd45" emissiveIntensity={0.35} roughness={0.6} />
+      </instancedMesh>
     </group>
+  )
+}
+
+function CoupleSpotlight({ night, mobile }: { night: boolean; mobile: boolean }) {
+  const target = useMemo(() => {
+    const object = new Object3D()
+    object.position.set(0, -0.55, 2.75)
+    return object
+  }, [])
+
+  return (
+    <>
+      <primitive object={target} />
+      <spotLight
+        position={[-11, 15, 11]}
+        target={target}
+        color={night ? '#d8c7ff' : '#ffd28c'}
+        intensity={night ? 85 : 150}
+        distance={48}
+        angle={0.3}
+        penumbra={0.82}
+        decay={1.55}
+        castShadow={!mobile}
+        shadow-mapSize={[mobile ? 512 : 1024, mobile ? 512 : 1024]}
+        shadow-bias={-0.0002}
+      />
+      <pointLight position={[0, 1.2, 5.2]} intensity={night ? 5 : 3.5} distance={10} color={night ? '#b8a5ff' : '#ffc77b'} />
+    </>
   )
 }
 
@@ -460,12 +580,11 @@ const WIDE: Vector3Tuple = [2, 11, 44]
 // On mobile (narrow/tall), pull back a lot more and raise the camera so the
 // tree isn't cramped against the edges of the screen.
 const WIDE_MOBILE: Vector3Tuple = [0, 13, 62]
-// On enter, glide up and in toward the glowing heart of the canopy — a dreamy
-// "ascend into the blossoms" move instead of zooming to a character.
-const CLOSE: Vector3Tuple = [0.4, 15, 13]
-const CLOSE_MOBILE: Vector3Tuple = [0.4, 16, 20]
-const LOOK_WIDE: Vector3Tuple = [0, 10, 0]
-const LOOK_CLOSE: Vector3Tuple = [0, 19, 0]
+// On enter, glide down toward the seated couple and the sunlit base of the tree.
+const CLOSE: Vector3Tuple = [0.1, 0.5, 10]
+const CLOSE_MOBILE: Vector3Tuple = [0.1, 1.35, 15]
+const LOOK_WIDE: Vector3Tuple = [0, 9, 0]
+const LOOK_CLOSE: Vector3Tuple = [0, -0.55, 2.75]
 
 function CameraRig({ zoom, enableParallax, mobile }: { zoom: boolean; enableParallax: boolean; mobile: boolean }) {
   const { camera, mouse } = useThree()
@@ -570,13 +689,21 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
         <ContactShadows position={[0, -2.55, 0]} opacity={night ? 0.5 : 0.4} scale={30} blur={2.4} far={8} resolution={1024} color={night ? '#000010' : '#2f5a32'} />
       )}
 
-      <GrassTufts night={night} count={mobile ? 420 : 1100} />
+      <GrassTufts night={night} count={mobile ? 280 : 700} />
+      <FlowerField night={night} count={mobile ? 90 : 240} />
 
       <Yggdrasil night={night} quality={quality} />
 
+      {/* Pixel/block 2.5D couple sitting and leaning against the trunk. */}
+      <SeatedCouple position={[0, -1.95, 2.75]} />
+      <CoupleSpotlight night={night} mobile={mobile} />
+      {/* Cheap grounding shadow still works when mobile real-time shadows are off. */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.565, 3.05]} scale={[1.45, 0.62, 1]}>
+        <circleGeometry args={[2.35, 32]} />
+        <meshBasicMaterial color={night ? '#09060d' : '#3d562f'} transparent opacity={night ? 0.4 : 0.2} depthWrite={false} />
+      </mesh>
+
       {!calm && <LightShafts night={night} />}
-
-
 
       <Petals count={mobile ? 22 : 55} night={night} />
       {!calm && <Sparkles count={mobile ? 30 : 80} scale={[22, 24, 14]} position={[0, 10, 0]} size={night ? 4 : 2.5} speed={0.3} color={night ? '#ffd0e6' : '#ffffff'} opacity={night ? 0.9 : 0.6} />}
@@ -587,7 +714,7 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
               single biggest contributor to a "rendered game" look) */}
           <N8AO aoRadius={3} distanceFalloff={1} intensity={night ? 2.4 : 1.8} quality="high" halfRes color={night ? '#0a0414' : '#5a3348'} />
           <Bloom intensity={night ? 1.0 : 0.5} luminanceThreshold={night ? 0.35 : 0.82} luminanceSmoothing={0.9} mipmapBlur radius={0.65} />
-          <DepthOfField focusDistance={zoom ? 0.008 : 0.02} focalLength={zoom ? 0.05 : 0.03} bokehScale={3} />
+          <DepthOfField focusDistance={zoom ? 0.004 : 0.02} focalLength={zoom ? 0.025 : 0.03} bokehScale={zoom ? 1.2 : 2.5} />
           {/* filmic color grading */}
           <HueSaturation saturation={night ? 0.08 : 0.14} hue={0} />
           <BrightnessContrast brightness={night ? 0 : -0.06} contrast={0.12} />
