@@ -13,6 +13,7 @@ import {
 } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
 import { useMemo, useRef, useState } from 'react'
+import { Environment3D } from './Environment3D'
 import {
   ACESFilmicToneMapping,
   CanvasTexture,
@@ -443,8 +444,9 @@ function GrassTufts({ night }: { night: boolean }) {
    Camera rig — wide establishing shot of the whole tree, easing to a
    close zoom when `zoom` turns true.
 ----------------------------------------------------------------- */
-// Wide shot pulled far back + a touch higher so the whole towering tree reads.
-const WIDE: Vector3Tuple = [1.5, 9, 40]
+// Wide shot: far back + higher so the whole towering tree reads against the
+// sky, sun, clouds and distant mountains.
+const WIDE: Vector3Tuple = [2, 11, 44]
 // On enter, glide up and in toward the glowing heart of the canopy — a dreamy
 // "ascend into the blossoms" move instead of zooming to a character.
 const CLOSE: Vector3Tuple = [0.4, 15, 13]
@@ -496,8 +498,11 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
         toneMappingExposure: night ? 1.05 : 1.15,
       }}
     >
-      <color attach="background" args={[sky]} />
-      <fog attach="fog" args={[sky, 34, 75]} />
+      {/* Sky (in Environment3D) paints the background; fog blends the distant
+          mountains into the horizon for depth. */}
+      <fog attach="fog" args={[sky, 55, 140]} />
+
+      <Environment3D night={night} mobile={mobile} />
 
       {/* Percentage-closer soft shadows for realistic contact softening */}
       {!mobile && <SoftShadows size={28} samples={12} focus={0.9} />}
