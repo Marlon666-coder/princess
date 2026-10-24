@@ -3,6 +3,7 @@ import { Float } from '@react-three/drei'
 import { EffectComposer, Bloom, DepthOfField } from '@react-three/postprocessing'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Shape, type Group } from 'three'
+import { useTheme } from '../context/ThemeContext'
 
 /* eslint-disable react-hooks/set-state-in-effect -- WebGL/reduced-motion support
    can only be detected on the client, so it is set from an effect after mount. */
@@ -116,18 +117,30 @@ function SakuraBranches() {
  * transparent, so without this the composer composites over opaque black. Drawing
  * the romantic gradient in-scene lets bloom/DOF/vignette sit on top of pink.
  */
-function SceneBackdrop() {
+function SceneBackdrop({ night }: { night: boolean }) {
   const { viewport } = useThree()
+  const uniforms = useMemo(
+    () =>
+      night
+        ? {
+            top: { value: [0.082, 0.051, 0.106] }, // #150d1b
+            mid: { value: [0.137, 0.082, 0.216] }, // #231537
+            bottom: { value: [0.102, 0.063, 0.157] }, // #1a1028
+          }
+        : {
+            top: { value: [1.0, 0.956, 0.976] }, // #fff4f9
+            mid: { value: [0.992, 0.862, 0.905] }, // #fddde7
+            bottom: { value: [0.976, 0.929, 0.976] }, // #f9edf9
+          },
+    [night],
+  )
   return (
     <mesh position={[0, 0, -6]} scale={[viewport.width * 3, viewport.height * 3, 1]}>
       <planeGeometry args={[1, 1, 1, 1]} />
       <shaderMaterial
+        key={night ? 'night' : 'day'}
         depthWrite={false}
-        uniforms={{
-          top: { value: [1.0, 0.956, 0.976] }, // #fff4f9
-          mid: { value: [0.992, 0.862, 0.905] }, // #fddde7
-          bottom: { value: [0.976, 0.929, 0.976] }, // #f9edf9
-        }}
+        uniforms={uniforms}
         vertexShader={`
           varying vec2 vUv;
           void main() {
@@ -233,6 +246,8 @@ function CssCanvasFallback({ dense }: { dense: boolean }) {
 export function SakuraBackground({ dense = false }: { dense?: boolean }) {
   const [webgl, setWebgl] = useState(false)
   const [reduced, setReduced] = useState(false)
+  const { theme } = useTheme()
+  const night = theme === 'night'
   const visible = useDocumentVisible()
 
   useEffect(() => {
@@ -259,8 +274,8 @@ export function SakuraBackground({ dense = false }: { dense?: boolean }) {
         frameloop={visible ? 'always' : 'never'}
         gl={{ alpha: true, antialias: !mobile }}
       >
-        {/* In-scene pink gradient so post-processing composites over pink, not black. */}
-        <SceneBackdrop />
+        {/* In-scene gradient so post-processing composites over it, theme-aware. */}
+        <SceneBackdrop night={night} />
         <ambientLight intensity={1.6} />
         <directionalLight position={[3, 5, 6]} intensity={1.4} color="#fff2f7" />
         <pointLight position={[-4, -2, 4]} intensity={0.7} color="#ffd6e6" />
