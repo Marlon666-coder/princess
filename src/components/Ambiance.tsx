@@ -60,7 +60,9 @@ export function Ambiance({ variant = 'app' }: { variant?: 'app' | 'auth' }) {
                   animationDuration: h.duration,
                 }}
               >
-                ♥
+                <svg viewBox="0 0 24 24" width="100%" height="100%" fill="currentColor" aria-hidden="true">
+                  <path d="M12 21s-7.5-4.6-10-9.3C.3 8.4 1.9 5 5.2 5c2 0 3.3 1.1 4 2.2.7-1.1 2-2.2 4-2.2 3.3 0 4.9 3.4 3.2 6.7C19.5 16.4 12 21 12 21z" />
+                </svg>
               </span>
             ))}
           </div>

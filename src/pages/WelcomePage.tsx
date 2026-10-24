@@ -7,6 +7,7 @@ import { friendlyError } from '../lib/supabase'
 import { Button, Input } from '../components/UI'
 import { SakuraBackground } from '../components/SakuraBackground'
 import { Ambiance } from '../components/Ambiance'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { Magnetic } from '../components/motion'
 
 export function WelcomePage() {
@@ -22,6 +23,7 @@ export function WelcomePage() {
   }
 
   return <main className="welcome-page">
+    <ThemeToggle floating />
     <Ambiance variant="auth" />
     <SakuraBackground dense />
     <AnimatePresence mode="wait">
