@@ -18,8 +18,8 @@ export function WelcomePage() {
 
   function enter() {
     setStage('zooming')
-    // let the cinematic camera zoom play, then reveal the login card
-    window.setTimeout(() => setStage('login'), 2200)
+    // let the cinematic camera zoom settle on the couple, linger, then reveal login
+    window.setTimeout(() => setStage('login'), 3000)
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {

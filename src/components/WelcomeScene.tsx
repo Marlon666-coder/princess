@@ -366,10 +366,12 @@ function Petals({ count, night }: { count: number; night: boolean }) {
    Camera rig — wide establishing shot of the whole tree, easing to a
    close zoom on the couple when `zoom` turns true.
 ----------------------------------------------------------------- */
-const WIDE: Vector3Tuple = [2, 7, 30]
-const CLOSE: Vector3Tuple = [-0.6, 1.6, 7]
-const LOOK_WIDE: Vector3Tuple = [0, 9, 0]
-const LOOK_CLOSE: Vector3Tuple = [-0.3, 1.3, 0]
+// Wide shot pulled far back + a touch higher so the whole towering tree reads.
+const WIDE: Vector3Tuple = [1.5, 9, 40]
+// Close shot drops to eye level with the couple at the base and moves in on them.
+const CLOSE: Vector3Tuple = [0, -0.6, 6.5]
+const LOOK_WIDE: Vector3Tuple = [0, 10, 0]
+const LOOK_CLOSE: Vector3Tuple = [0, -1.1, 2.4]
 
 function CameraRig({ zoom, enableParallax }: { zoom: boolean; enableParallax: boolean }) {
   const { camera, mouse } = useThree()
@@ -451,9 +453,11 @@ export function WelcomeScene({ zoom }: { zoom: boolean }) {
 
       <Yggdrasil night={night} quality={quality} />
 
-      {/* couple holding hands at the base */}
-      <BlockyCharacter position={[-0.85, -2.6, 2.4]} facing={1} palette={boyPalette} />
-      <BlockyCharacter position={[0.85, -2.6, 2.4]} facing={-1} palette={girlPalette} />
+      {/* couple holding hands at the base, turned slightly toward each other */}
+      <group position={[0, 0, 2.6]}>
+        <BlockyCharacter position={[-0.8, -2.6, 0]} facing={1} palette={boyPalette} />
+        <BlockyCharacter position={[0.8, -2.6, 0]} facing={-1} palette={girlPalette} />
+      </group>
 
       <Petals count={mobile ? 22 : 55} night={night} />
       {!calm && <Sparkles count={mobile ? 30 : 80} scale={[22, 24, 14]} position={[0, 10, 0]} size={night ? 4 : 2.5} speed={0.3} color={night ? '#ffd0e6' : '#ffffff'} opacity={night ? 0.9 : 0.6} />}

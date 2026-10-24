@@ -537,22 +537,27 @@ html { scroll-behavior: smooth; }
 
 .welcome-cinematic .scene-overlay { position: relative; z-index: 3; }
 
-/* Intro copy sits in the upper area so the tree + characters stay visible */
+/* Intro copy sits at the very top so the whole tree + characters stay visible */
 .welcome-cinematic .welcome-content {
   text-align: center;
   align-self: start;
-  margin-top: clamp(2rem, 7vh, 5rem);
-  max-width: 680px;
+  margin-top: clamp(1rem, 3.5vh, 2.6rem);
+  max-width: 720px;
 }
 .welcome-cinematic .scene-title {
-  text-shadow: 0 4px 30px rgba(60, 20, 40, 0.45);
+  font-size: clamp(1.9rem, 4.4vw, 3.4rem);
+  line-height: 1.04;
+  margin: 0.3rem 0 0.2rem;
+  text-shadow: 0 4px 30px rgba(60, 20, 40, 0.5), 0 2px 10px rgba(0, 0, 0, 0.25);
 }
+.welcome-cinematic .scene-title .title-heart { width: 0.7em; height: 0.7em; }
 .welcome-cinematic .scene-tagline {
-  font: italic 1.2rem 'Playfair Display', serif;
+  font: italic 1.05rem 'Playfair Display', serif;
   color: #6f2a44;
-  margin: 0.4rem 0 1.6rem;
+  margin: 0.3rem 0 1.2rem;
   text-shadow: 0 2px 12px rgba(255, 255, 255, 0.6);
 }
+.welcome-cinematic .welcome-content .button { box-shadow: 0 12px 30px rgba(189, 83, 119, 0.4); }
 [data-theme='night'] .welcome-cinematic .scene-title { color: #ffe0ec; }
 [data-theme='night'] .welcome-cinematic .scene-tagline { color: #f0c4d6; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5); }
 
@@ -572,13 +577,17 @@ html { scroll-behavior: smooth; }
   filter: drop-shadow(0 8px 26px rgba(220, 102, 137, 0.6));
 }
 
-/* login card floats centered over the zoomed scene */
+/* login card docks toward the bottom so the zoomed-in couple stays visible */
 .welcome-cinematic .auth-card {
-  align-self: center;
+  align-self: end;
+  margin-bottom: clamp(1rem, 4vh, 3rem);
   backdrop-filter: blur(22px);
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.86);
 }
-[data-theme='night'] .welcome-cinematic .auth-card { background: rgba(38, 24, 48, 0.8); }
+[data-theme='night'] .welcome-cinematic .auth-card { background: rgba(38, 24, 48, 0.82); }
+@media (min-height: 760px) {
+  .welcome-cinematic .auth-card { align-self: center; margin-bottom: 0; }
+}
 
 @media (max-width: 760px) {
   .welcome-cinematic .welcome-content { margin-top: clamp(1rem, 4vh, 3rem); }
